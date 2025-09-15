@@ -73,7 +73,6 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 				return nil
 			}
 			// call field-attached validations
-			earlyReturn := false
 			if e := validate.EachSliceVal(ctx, op, fldPath, obj, oldObj, func(a OtherStruct, b OtherStruct) bool {
 				return a.Key1Field == b.Key1Field && a.Key2Field == b.Key2Field
 			}, validate.DirectEqual, validate.ImmutableByCompare)...)
@@ -92,7 +91,6 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 				return nil
 			}
 			// call field-attached validations
-			earlyReturn := false
 			if e := validate.EachSliceVal(ctx, op, fldPath, obj, oldObj, func(a OtherTypedefStruct, b OtherTypedefStruct) bool {
 				return a.Key1Field == b.Key1Field && a.Key2Field == b.Key2Field
 			}, validate.DirectEqual, validate.ImmutableByCompare)...)
@@ -111,7 +109,6 @@ func Validate_Struct(ctx context.Context, op operation.Operation, fldPath *field
 				return nil
 			}
 			// call field-attached validations
-			earlyReturn := false
 			if e := validate.EachSliceVal(ctx, op, fldPath, obj, oldObj, func(a OtherStruct, b OtherStruct) bool {
 				return a.Key1Field == b.Key1Field && a.Key2Field == b.Key2Field
 			}, validate.DirectEqual, validate.ImmutableByCompare)...)

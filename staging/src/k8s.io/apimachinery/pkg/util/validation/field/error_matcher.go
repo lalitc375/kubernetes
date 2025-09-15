@@ -86,6 +86,10 @@ func (m ErrorMatcher) Matches(want, got *Error) bool {
 	if m.matchDetail != nil && !m.matchDetail(want.Detail, got.Detail) {
 		return false
 	}
+	if m.matchDeclarativeOnly && want.DeclarativeOnly != got.DeclarativeOnly {
+		return false
+	}
+
 	return true
 }
 
@@ -147,6 +151,10 @@ func (m ErrorMatcher) Render(e *Error) string {
 	if m.matchDetail != nil {
 		comma()
 		buf.WriteString(fmt.Sprintf("Detail=%q", e.Detail))
+	}
+	if m.matchDeclarativeOnly {
+		comma()
+		buf.WriteString(fmt.Sprintf("DeclarativeOnly=%t", e.DeclarativeOnly))
 	}
 	return "{" + buf.String() + "}"
 }
@@ -221,6 +229,13 @@ func (m ErrorMatcher) ByOrigin() ErrorMatcher {
 // matching by Origin.
 func (m ErrorMatcher) RequireOriginWhenInvalid() ErrorMatcher {
 	m.requireOriginWhenInvalid = true
+	return m
+}
+
+// ByDeclarativeOnly returns a derived ErrorMatcher which also matches by the DeclarativeOnly
+// value of field errors.
+func (m ErrorMatcher) ByDeclarativeOnly() ErrorMatcher {
+	m.matchDeclarativeOnly = true
 	return m
 }
 

@@ -337,3 +337,46 @@ func tweakStatusDeviceRequestAllocationResultPool(pool string) func(rc *resource
 		}
 	}
 }
+
+func mkResourceClaimWithStatus() resource.ResourceClaim {
+	return resource.ResourceClaim{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "valid-claim",
+			Namespace: "default",
+		},
+		Spec: resource.ResourceClaimSpec{
+			Devices: resource.DeviceClaim{
+				Requests: []resource.DeviceRequest{
+					{
+						Name: "req-0",
+						Exactly: &resource.ExactDeviceRequest{
+							DeviceClassName: "class",
+							AllocationMode:  resource.DeviceAllocationModeAll,
+						},
+					},
+				},
+			},
+		},
+		Status: resource.ResourceClaimStatus{
+			Allocation: &resource.AllocationResult{
+				Devices: resource.DeviceAllocationResult{
+					Results: []resource.DeviceRequestAllocationResult{
+						{
+							Request: "req-0",
+							Driver:  "dra.example.com",
+							Pool:    "pool-0",
+							Device:  "device-0",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func tweakStatusDeviceRequestAllocationResultPool(obj resource.ResourceClaim, pool string) resource.ResourceClaim {
+	for i := range obj.Status.Allocation.Devices.Results {
+		obj.Status.Allocation.Devices.Results[i].Pool = pool
+	}
+	return obj
+}

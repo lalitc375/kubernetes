@@ -114,7 +114,7 @@ func EachMapKey[K ~string, T any](ctx context.Context, op operation.Operation, f
 			continue
 		}
 		// Note: the field path is the field, not the key.
-		errs = append(errs, validator(ctx, op, fldPath, &key, nil)...)
+		errs = append(errs, validator(ctx, op, fldPath.Key(string(key)), &key, nil)...)
 	}
 	return errs
 }

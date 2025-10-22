@@ -33,8 +33,8 @@ func Test_StructPrimitive(t *testing.T) {
 
 	st := localSchemeBuilder.Test(t)
 	st.Value(mkTest()).ExpectMatches(field.ErrorMatcher{}.ByType().ByField(), field.ErrorList{
-		field.Invalid(field.NewPath("intField"), "", ""),
-		field.Invalid(field.NewPath("intPtrField"), "", ""),
+		field.Invalid(field.NewPath("intField"), "", "field intField"),
+		field.Invalid(field.NewPath("intPtrField"), "", "field intPtrField"),
 	})
 	st.Value(mkTest()).OldValue(mkTest()).ExpectValid()
 }
@@ -69,10 +69,12 @@ func Test_StructMap(t *testing.T) {
 
 	st := localSchemeBuilder.Test(t)
 	st.Value(mkTest()).ExpectValidateFalseByPath(map[string][]string{
-		"aliasMapKeyTypeField":      {"field aliasMapKeyTypeField", "type MapKeyType", "type S"},
+		"aliasMapKeyTypeField":      {"field aliasMapKeyTypeField", "type MapKeyType"},
+		"aliasMapKeyTypeField[k]":   {"type S"},
 		"aliasMapValueTypeField":    {"field aliasMapValueTypeField", "type MapValueType"},
 		"aliasMapValueTypeField[k]": {"type S"},
-		"mapKeyField":               {"field mapKeyField", "type S"},
+		"mapKeyField":               {"field mapKeyField"},
+		"mapKeyField[k]":            {"type S"},
 		"mapValueField":             {"field mapValueField"},
 		"mapValueField[k]":          {"type S"},
 	})

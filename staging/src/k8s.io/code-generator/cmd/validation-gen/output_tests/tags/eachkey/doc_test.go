@@ -34,25 +34,39 @@ func Test(t *testing.T) {
 		MapTypeField:             UnvalidatedMapType{"a": "A", "b": "B"},
 		ValidatedMapTypeField:    ValidatedMapType{"a": "A", "b": "B"},
 	}).ExpectValidateFalseByPath(map[string][]string{
-		"mapField": {
+		"mapField[a]": {
 			"Struct.MapField(keys)",
+		},
+		"mapField[b]": {
 			"Struct.MapField(keys)",
 		},
-		"mapTypedefField": {
+		"mapTypedefField[a]": {
 			"Struct.MapTypedefField(keys)",
+		},
+		"mapTypedefField[b]": {
 			"Struct.MapTypedefField(keys)",
 		},
-		"mapValidatedTypedefField": {
-			"Struct.MapValidatedTypedefField(keys)", "ValidatedStringType",
-			"Struct.MapValidatedTypedefField(keys)", "ValidatedStringType",
+		"mapValidatedTypedefField[a]": {
+			"Struct.MapValidatedTypedefField(keys)",
+			"ValidatedStringType",
 		},
-		"mapTypeField": {
-			"Struct.MapTypeField(keys)",
+		"mapValidatedTypedefField[b]": {
+			"Struct.MapValidatedTypedefField(keys)",
+			"ValidatedStringType",
+		},
+		"mapTypeField[a]": {
 			"Struct.MapTypeField(keys)",
 		},
-		"validatedMapTypeField": {
-			"Struct.ValidatedMapTypeField(keys)", "ValidatedMapType(keys)",
-			"Struct.ValidatedMapTypeField(keys)", "ValidatedMapType(keys)",
+		"mapTypeField[b]": {
+			"Struct.MapTypeField(keys)",
+		},
+		"validatedMapTypeField[a]": {
+			"Struct.ValidatedMapTypeField(keys)",
+			"ValidatedMapType(keys)",
+		},
+		"validatedMapTypeField[b]": {
+			"Struct.ValidatedMapTypeField(keys)",
+			"ValidatedMapType(keys)",
 		},
 	})
 }

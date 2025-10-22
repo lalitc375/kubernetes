@@ -4,33 +4,53 @@
       "type Struct"
     ],
     "mapField": [
-      "field Struct.MapField",
-      "field Struct.MapField(keys)",
+      "field Struct.MapField"
+    ],
+    "mapField[ÀYǎ3g成oɜH偩j0âȰ]": [
+      "field Struct.MapField(keys)"
+    ],
+    "mapField[岯Ȉ\u0026\u003c沲3]": [
       "field Struct.MapField(keys)"
     ],
     "mapTypeField": [
-      "field Struct.MapTypeField",
-      "field Struct.MapTypeField(keys)",
+      "field Struct.MapTypeField"
+    ],
+    "mapTypeField[R涞!Ä\u003e漌Ǭ顼溹*]": [
+      "field Struct.MapTypeField(keys)"
+    ],
+    "mapTypeField[`ȝ懿沇]": [
       "field Struct.MapTypeField(keys)"
     ],
     "mapTypedefField": [
-      "field Struct.MapTypedefField",
-      "field Struct.MapTypedefField(keys)",
+      "field Struct.MapTypedefField"
+    ],
+    "mapTypedefField[V噘¢\u003eóǲ岋笨Gń條ģ]": [
+      "field Struct.MapTypedefField(keys)"
+    ],
+    "mapTypedefField[þƿ髈儱Ŀ蒫÷K鬣壈]": [
       "field Struct.MapTypedefField(keys)"
     ],
     "mapValidatedTypedefField": [
+      "field Struct.MapValidatedTypedefField"
+    ],
+    "mapValidatedTypedefField[嶪滢w飃m=Sx蘳Gčü櫒}眙+ËQL]": [
       "ValidatedStringType",
+      "field Struct.MapValidatedTypedefField(keys)"
+    ],
+    "mapValidatedTypedefField[瘯霡豐Ȭ-]": [
       "ValidatedStringType",
-      "field Struct.MapValidatedTypedefField",
-      "field Struct.MapValidatedTypedefField(keys)",
       "field Struct.MapValidatedTypedefField(keys)"
     ],
     "validatedMapTypeField": [
       "ValidatedMapType",
-      "field Struct.ValidatedMapTypeField",
+      "field Struct.ValidatedMapTypeField"
+    ],
+    "validatedMapTypeField[ư銩6ĳ憏歅]": [
       "field Struct.ValidatedMapTypeField(keys)",
+      "type ValidatedMapType(keys)"
+    ],
+    "validatedMapTypeField[ɽ溢煮FɀÄf渂硹譯匬襧*|机Ȱ]": [
       "field Struct.ValidatedMapTypeField(keys)",
-      "type ValidatedMapType(keys)",
       "type ValidatedMapType(keys)"
     ]
   }

@@ -55,23 +55,29 @@ func Test(t *testing.T) {
 		"listMapOfOpaqueStructField":          {"field Struct.ListMapOfOpaqueStructField"},
 		"listMapOfOpaqueStructField[0]":       {"field Struct.ListMapOfOpaqueStructField vals"},
 		"listMapOfOpaqueStructField[1]":       {"field Struct.ListMapOfOpaqueStructField vals"},
-		"mapOfStringToStructField": {
-			"field Struct.MapOfStringToStructField",
+		"mapOfStringToStructField":            {"field Struct.MapOfStringToStructField"},
+		"mapOfStringToStructField[a]": {
 			"field Struct.MapOfStringToStructField keys",
-			"field Struct.MapOfStringToStructField keys",
+			"field Struct.MapOfStringToStructField vals",
 			"type OtherString",
-			"type OtherString",
+			"type OtherStruct",
 		},
-		"mapOfStringToStructField[a]":             {"field Struct.MapOfStringToStructField vals", "type OtherStruct"},
 		"mapOfStringToStructField[a].stringField": {"field OtherStruct.StringField"},
-		"mapOfStringToStructField[b]":             {"field Struct.MapOfStringToStructField vals", "type OtherStruct"},
-		"mapOfStringToStructField[b].stringField": {"field OtherStruct.StringField"},
-		"mapOfStringToOpaqueStructField": {
-			"field Struct.MapOfStringToOpaqueStructField",
-			"field Struct.MapOfStringToOpaqueStructField keys",
-			"field Struct.MapOfStringToOpaqueStructField keys",
+		"mapOfStringToStructField[b]": {
+			"field Struct.MapOfStringToStructField keys",
+			"field Struct.MapOfStringToStructField vals",
+			"type OtherString",
+			"type OtherStruct",
 		},
-		"mapOfStringToOpaqueStructField[a]": {"field Struct.MapOfStringToOpaqueStructField vals"},
-		"mapOfStringToOpaqueStructField[b]": {"field Struct.MapOfStringToOpaqueStructField vals"},
+		"mapOfStringToStructField[b].stringField": {"field OtherStruct.StringField"},
+		"mapOfStringToOpaqueStructField":          {"field Struct.MapOfStringToOpaqueStructField"},
+		"mapOfStringToOpaqueStructField[a]": {
+			"field Struct.MapOfStringToOpaqueStructField keys",
+			"field Struct.MapOfStringToOpaqueStructField vals",
+		},
+		"mapOfStringToOpaqueStructField[b]": {
+			"field Struct.MapOfStringToOpaqueStructField keys",
+			"field Struct.MapOfStringToOpaqueStructField vals",
+		},
 	})
 }

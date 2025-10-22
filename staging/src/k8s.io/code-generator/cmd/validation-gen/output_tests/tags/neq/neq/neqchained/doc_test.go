@@ -64,7 +64,7 @@ func Test(t *testing.T) {
 		field.Invalid(field.NewPath("stringSliceField").Index(2), nil, "").WithOrigin("neq"),
 		field.Invalid(field.NewPath("stringMapField").Key("a"), nil, "").WithOrigin("neq"),
 		field.Invalid(field.NewPath("stringMapField").Key("c"), nil, "").WithOrigin("neq"),
-		field.Invalid(field.NewPath("stringMapKeyField"), nil, "").WithOrigin("neq"),
+		field.Invalid(field.NewPath("stringMapKeyField").Key("disallowed-key"), nil, "").WithOrigin("neq"),
 		field.Invalid(field.NewPath("validatedSliceField").Index(1), nil, "").WithOrigin("neq"),
 		field.Invalid(field.NewPath("validatedSliceField").Index(2), nil, "").WithOrigin("neq"),
 		field.Invalid(field.NewPath("validatedStructField", "stringField"), nil, "").WithOrigin("neq"),

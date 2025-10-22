@@ -41,10 +41,10 @@ func Test_Struct(t *testing.T) {
 	}
 	st := localSchemeBuilder.Test(t)
 	st.Value(mkTest()).ExpectValidateFalseByPath(map[string][]string{
-		"mapField":                 {"field Struct.MapField(keys)"},
-		"mapTypedefField":          {"field Struct.MapTypedefField(keys)"},
-		"mapValidatedTypedefField": {"ValidatedStringType", "field Struct.MapValidatedTypedefField(keys)"},
-		"validatedMapTypeField":    {"field Struct.ValidatedMapTypeField(keys)", "type ValidatedMapType(keys)"},
+		"mapField[x]":                 {"field Struct.MapField(keys)"},
+		"mapTypedefField[x]":          {"field Struct.MapTypedefField(keys)"},
+		"mapValidatedTypedefField[x]": {"ValidatedStringType", "field Struct.MapValidatedTypedefField(keys)"},
+		"validatedMapTypeField[x]":    {"field Struct.ValidatedMapTypeField(keys)", "type ValidatedMapType(keys)"},
 	})
 
 	st.Value(mkTest()).OldValue(mkTest()).ExpectValid()

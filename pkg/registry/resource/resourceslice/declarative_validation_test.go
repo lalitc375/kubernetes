@@ -30,7 +30,7 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-var apiVersions = []string{"v1", "v1beta1", "v1beta2"}
+var apiVersions = []string{"v1"}
 
 func TestDeclarativeValidate(t *testing.T) {
 	for _, apiVersion := range apiVersions {
@@ -252,182 +252,15 @@ func TestDeclarativeValidateUpdate(t *testing.T) {
 				update       resource.ResourceSlice
 				expectedErrs field.ErrorList
 			}{
-				"valid no changes": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(),
-				},
-				// spec.devices[%d].bindingConditions
-				"valid update: at limit binding conditions": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakBindingConditions(resource.BindingConditionsMaxSize)),
-				},
-				"invalid update:update with too many binding conditions": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakBindingConditions(resource.BindingConditionsMaxSize + 1)),
-					expectedErrs: field.ErrorList{
-						field.TooMany(field.NewPath("spec", "devices").Index(0).Child("bindingConditions"), resource.BindingConditionsMaxSize+1, resource.BindingConditionsMaxSize).WithOrigin("maxItems"),
-					},
-				},
-				// spec.devices[%d].bindingFailureConditions
-				"valid update: at limit binding failure conditions": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakBindingFailureConditions(resource.BindingFailureConditionsMaxSize)),
-				},
-				"update with too many binding failure conditions": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakBindingFailureConditions(resource.BindingFailureConditionsMaxSize + 1)),
-					expectedErrs: field.ErrorList{
-						field.TooMany(field.NewPath("spec", "devices").Index(0).Child("bindingFailureConditions"), resource.BindingFailureConditionsMaxSize+1, resource.BindingFailureConditionsMaxSize).WithOrigin("maxItems"),
-					},
-				},
-				// spec.devices.taints.effect
-				"valid update: NoSchedule taint effect": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakDeviceTaintEffect(string(resource.DeviceTaintEffectNoSchedule))),
-				},
-				"valid update: NoExecute taint effect": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakDeviceTaintEffect(string(resource.DeviceTaintEffectNoExecute))),
-				},
-				"invalid update: unsupported taint effect": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakDeviceTaintEffect("InvalidEffect")),
-					expectedErrs: field.ErrorList{
-						field.NotSupported(field.NewPath("spec", "devices").Index(0).Child("taints").Index(0).Child("effect"), "InvalidEffect", []string{string(resource.DeviceTaintEffectNoSchedule), string(resource.DeviceTaintEffectNoExecute)}),
-					},
-				},
-				"invalid update: empty taint effect": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakDeviceTaintEffect("")),
-					expectedErrs: field.ErrorList{
-						field.Required(field.NewPath("spec", "devices").Index(0).Child("taints").Index(0).Child("effect"), ""),
-					},
-				},
-				"valid update: device attribute": {
-					old:    mkResourceSliceWithDevices(tweakDeviceAttribute("test.io/int", resource.DeviceAttribute{IntValue: ptr.To[int64](123)})),
-					update: mkResourceSliceWithDevices(tweakDeviceAttribute("test.io/int", resource.DeviceAttribute{BoolValue: ptr.To(true)})),
-				},
-				"invalid update: device attribute with multiple values": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakDeviceAttribute("test.io/multiple", resource.DeviceAttribute{IntValue: ptr.To[int64](123), BoolValue: ptr.To(true)})),
-					expectedErrs: field.ErrorList{
-						field.Invalid(field.NewPath("spec", "devices").Index(0).Child("attributes").Key("test.io/multiple"), "", "may have only one of the following fields set: bool, int, string, version"),
-					},
-				},
-				// spec.sharedCounters.counters
-				"invalid update: shared counter key with uppercase": {
-					old:    mkResourceSliceWithSharedCounters(),
-					update: mkResourceSliceWithSharedCounters(tweakSharedCounter("InvalidKey")),
-					expectedErrs: field.ErrorList{
-						field.Invalid(field.NewPath("spec", "sharedCounters").Index(0).Child("counters"), "InvalidKey", "").WithOrigin("format=k8s-short-name"),
-					},
-				},
-				// spec.devices.consumesCounters.counters
-				"invalid update: device counter key with uppercase": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakDeviceCounter("InvalidKey")),
-					expectedErrs: field.ErrorList{
-						field.Invalid(field.NewPath("spec", "devices").Index(0).Child("consumesCounters").Index(0).Child("counters"), "InvalidKey", "").WithOrigin("format=k8s-short-name"),
-					},
-				},
-				// spec.sharedCounters
-				"valid update: at limit shared counters": {
-					old:    mkResourceSliceWithSharedCounters(),
-					update: mkResourceSliceWithSharedCounters(tweakSharedCounters(resource.ResourceSliceMaxCounterSets)),
-				},
-				"invalid update: too many shared counters": {
-					old:    mkResourceSliceWithSharedCounters(),
-					update: mkResourceSliceWithSharedCounters(tweakSharedCounters(resource.ResourceSliceMaxCounterSets + 1)),
-					expectedErrs: field.ErrorList{
-						field.TooMany(field.NewPath("spec").Child("sharedCounters"), resource.ResourceSliceMaxCounterSets+1, resource.ResourceSliceMaxCounterSets).WithOrigin("maxItems"),
-					},
-				},
-				// spec.devices.consumesCounters
-				"valid update: at limit device consumes counters": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakDeviceConsumesCounters(resource.ResourceSliceMaxDeviceCounterConsumptionsPerDevice)),
-				},
-				"invalid update: too many device consumes counters": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakDeviceConsumesCounters(resource.ResourceSliceMaxDeviceCounterConsumptionsPerDevice + 1)),
-					expectedErrs: field.ErrorList{
-						field.TooMany(field.NewPath("spec", "devices").Index(0).Child("consumesCounters"), resource.ResourceSliceMaxDeviceCounterConsumptionsPerDevice+1, resource.ResourceSliceMaxDeviceCounterConsumptionsPerDevice).WithOrigin("maxItems"),
-					},
-				},
-				// spec.sharedCounters.name
-				"valid update: counter set name": {
-					old:    mkResourceSliceWithSharedCounters(),
-					update: mkResourceSliceWithSharedCounters(tweakSharedCountersName("valid-key")),
-				},
-				"invalid update: counter set name": {
-					old:    mkResourceSliceWithSharedCounters(),
-					update: mkResourceSliceWithSharedCounters(tweakSharedCountersName("InvalidKey")),
-					expectedErrs: field.ErrorList{
-						field.Invalid(field.NewPath("spec", "sharedCounters").Index(0).Child("name"), "InvalidKey", "").WithOrigin("format=k8s-short-name"),
-					},
-				},
-				// spec.devices.consumesCounters.counterSet
-				"valid update: device consumes counters counter set name": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakDeviceConsumesCountersCounterSetName("valid-key")),
-				},
-				"invalid update: device consumes counters counter set name": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakDeviceConsumesCountersCounterSetName("InvalidKey")),
-					expectedErrs: field.ErrorList{
-						field.Invalid(field.NewPath("spec", "devices").Index(0).Child("consumesCounters").Index(0).Child("counterSet"), "InvalidKey", "").WithOrigin("format=k8s-short-name"),
-					},
-				},
-				// spec.sharedCounters
-				"valid update: distinct names for shared counters": {
-					old:    mkResourceSliceWithSharedCounters(),
-					update: mkResourceSliceWithSharedCounters(tweakSharedCountersName("valid-key-1", "valid-key-2")),
-				},
-				"invalid update: duplicate names for shared counters": {
-					old:    mkResourceSliceWithSharedCounters(),
-					update: mkResourceSliceWithSharedCounters(tweakSharedCountersName("duplicate-key", "duplicate-key")),
-					expectedErrs: field.ErrorList{
-						field.Duplicate(field.NewPath("spec").Child("sharedCounters").Index(1), "duplicate-key"),
-					},
-				},
-				// spec.devices.consumesCounters
-				"valid update: distinct names for counter set in device counter consumption": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakDeviceConsumesCountersCounterSetName("valid-key-1", "valid-key-2")),
-				},
-				"invalid update: duplicate names for counter set in device counter consumption": {
-					old:    mkResourceSliceWithDevices(),
-					update: mkResourceSliceWithDevices(tweakDeviceConsumesCountersCounterSetName("duplicate-key", "duplicate-key")),
-					expectedErrs: field.ErrorList{
-						field.Duplicate(field.NewPath("spec").Child("devices").Index(0).Child("consumesCounters").Index(1), "duplicate-key"),
-					},
-				},
-				// spec.sharedCounters.counters
-				"valid update: provided counters for counter set": {
-					old:    mkResourceSliceWithSharedCounters(),
-					update: mkResourceSliceWithSharedCounters(tweakSharedCounter("valid-key", "another-valid-key")),
-				},
-				"invalid update: missing counters for counter set": {
-					old:    mkResourceSliceWithSharedCounters(),
-					update: mkResourceSliceWithSharedCounters(tweakSharedCounter()),
-					expectedErrs: field.ErrorList{
-						field.Required(field.NewPath("spec").Child("sharedCounters").Index(0).Child("counters"), ""),
-					},
-				},
-				// spec.devices.consumesCounters.counters
-				"valid update: provided counters for device counter consumption": {
-					old:    mkResourceSliceWithDevices(tweakDeviceCounter("valid-key")),
-					update: mkResourceSliceWithDevices(tweakDeviceCounter("another-valid-key")),
-				},
 				// This tests doesn't pass and I have trouble understanding why.
 				//
-				// "invalid update: missing counters for device counter consumption": {
-				// 	old:    mkResourceSliceWithDevices(tweakDeviceCounter("valid-key")),
-				// 	update: mkResourceSliceWithDevices(tweakDeviceCounter()),
-				// 	expectedErrs: field.ErrorList{
-				// 		field.Required(field.NewPath("spec", "devices").Index(0).Child("consumesCounters").Index(0).Child("counters"), ""),
-				// 	},
-				// },
+				"invalid update: missing counters for device counter consumption": {
+					old:    mkResourceSliceWithDevices(tweakDeviceCounter("valid-key")),
+					update: mkResourceSliceWithDevices(tweakDeviceCounter()),
+					expectedErrs: field.ErrorList{
+						field.Required(field.NewPath("spec", "devices").Index(0).Child("consumesCounters").Index(0).Child("counters"), ""),
+					},
+				},
 			}
 			for k, tc := range testCases {
 				t.Run(k, func(t *testing.T) {

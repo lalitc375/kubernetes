@@ -32,6 +32,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/spec"
 	"k8s.io/kube-openapi/pkg/validation/strfmt"
 	"k8s.io/kube-openapi/pkg/validation/validate"
+	"k8s.io/klog/v2"
 )
 
 type SchemaValidator interface {
@@ -132,6 +133,7 @@ func NewSchemaValidatorFromOpenAPI(openapiSchema *spec.Schema) SchemaValidator {
 // If feature `CRDValidationRatcheting` is disabled, this behaves identically to
 // ValidateCustomResource(customResource).
 func ValidateCustomResourceUpdate(fldPath *field.Path, customResource, old interface{}, validator SchemaValidator, options ...ValidationOption) field.ErrorList {
+	klog.V(4).Infof("CRDValidationDebug: Validating custom resource update, new: %v, old: %v", customResource, old)
 	// Additional feature gate check for sanity
 	if !utilfeature.DefaultFeatureGate.Enabled(features.CRDValidationRatcheting) {
 		return ValidateCustomResource(nil, customResource, validator)
@@ -150,6 +152,7 @@ func ValidateCustomResourceUpdate(fldPath *field.Path, customResource, old inter
 // ValidateCustomResource validates the Custom Resource against the schema in the CustomResourceDefinition.
 // CustomResource is a JSON data structure.
 func ValidateCustomResource(fldPath *field.Path, customResource interface{}, validator SchemaCreateValidator, options ...ValidationOption) field.ErrorList {
+	klog.V(4).Infof("CRDValidationDebug: Validating custom resource, object: %v", customResource)
 	if validator == nil {
 		return nil
 	}

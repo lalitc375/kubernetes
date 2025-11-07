@@ -22,6 +22,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/errors"
 	"k8s.io/kube-openapi/pkg/validation/spec"
 	"k8s.io/kube-openapi/pkg/validation/strfmt"
+	"k8s.io/klog/v2"
 )
 
 type typeValidator struct {
@@ -133,6 +134,7 @@ func (t *typeValidator) Validate(data interface{}) *Result {
 	result := new(Result)
 	result.Inc()
 	if data == nil {
+		klog.V(4).Infof("CRDValidationDebug: Validating null object at path %q, nullable in schema: %v", t.Path, t.Nullable)
 		// nil or zero value for the passed structure require Type: null
 		if len(t.Type) > 0 && !t.Type.Contains(nullType) && !t.Nullable { // TODO: if a property is not required it also passes this
 			return errorHelp.sErr(errors.InvalidType(t.Path, t.In, strings.Join(t.Type, ","), nullType))

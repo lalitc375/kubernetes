@@ -23,6 +23,7 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/errors"
 	"k8s.io/kube-openapi/pkg/validation/spec"
 	"k8s.io/kube-openapi/pkg/validation/strfmt"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -123,6 +124,7 @@ func (s *SchemaValidator) Applies(source interface{}, kind reflect.Kind) bool {
 
 // Validate validates the data against the schema
 func (s *SchemaValidator) Validate(data interface{}) *Result {
+	klog.V(4).Infof("CRDValidationDebug: Validating object at path %q, object: %v", s.Path, data)
 	result := new(Result)
 	if s == nil {
 		return result
@@ -174,6 +176,10 @@ func (s *SchemaValidator) Validate(data interface{}) *Result {
 
 		tpe = reflect.TypeOf(d)
 		kind = tpe.Kind()
+	}
+
+	if b, err := json.Marshal(d); err == nil {
+		klog.V(4).Infof("CRDValidationDebug: Validating object at path %q, json: %s", s.Path, string(b))
 	}
 
 	for _, v := range s.validators {

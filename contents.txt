@@ -1,0 +1,4 @@
+gemini-configs/kubernetes/.gemini/commands/review/list.toml
+gemini-configs/kubernetes/.gemini/commands/review/local.toml
+gemini-configs/kubernetes/.gemini/commands/review/pr.toml
+gemini-configs/kubernetes/GEMINI.md

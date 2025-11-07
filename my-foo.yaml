@@ -1,0 +1,16 @@
+apiVersion: example.com/v1
+kind: Foo
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"example.com/v1","kind":"Foo","metadata":{"annotations":{},"name":"my-foo","namespace":"default"},"spec":{"arrayMap":[{"key":"a","value":"A"}]}}
+  creationTimestamp: "2025-11-03T19:41:27Z"
+  generation: 1
+  name: my-foo
+  namespace: default
+  resourceVersion: "358352"
+  uid: 84a26803-c4ee-4c18-8484-45b2b719cc22
+spec:
+  arrayMap:
+  - key: a
+    value: A

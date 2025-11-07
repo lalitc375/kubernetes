@@ -1,0 +1,8 @@
+apiVersion: "example.com/v1alpha1"
+kind: MyCrd
+metadata:
+  name: repro
+spec:
+  arrayMap:
+  - key: "0"
+    foo: "1"

@@ -1,0 +1,10 @@
+apiVersion: mygroup.example.com/v1
+kind: MyCrd
+metadata:
+  name: repro
+spec:
+  arrayMap:
+  - key: a
+    value: a
+  - key: b
+    value: b

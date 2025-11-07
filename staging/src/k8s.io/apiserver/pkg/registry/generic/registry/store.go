@@ -52,9 +52,18 @@ import (
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	flowcontrolrequest "k8s.io/apiserver/pkg/util/flowcontrol/request"
 	"k8s.io/client-go/tools/cache"
-
+	"encoding/json"
 	"k8s.io/klog/v2"
 )
+
+// toJSON is a helper function to serialize an object to JSON for logging.
+func toJSON(obj interface{}) string {
+	b, err := json.Marshal(obj)
+	if err != nil {
+		return err.Error()
+	}
+	return string(b)
+}
 
 // FinishFunc is a function returned by Begin hooks to complete an operation.
 type FinishFunc func(ctx context.Context, success bool)
@@ -639,6 +648,7 @@ func (e *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 	// deleteObj is only used in case a deletion is carried out
 	var deleteObj runtime.Object
 	err = e.Storage.GuaranteedUpdate(ctx, key, out, ignoreNotFound, storagePreconditions, func(existing runtime.Object, res storage.ResponseMeta) (runtime.Object, *uint64, error) {
+		klog.V(4).Infof("CRDValidationDebug: SSA: existing object: %s", toJSON(existing))
 		existingResourceVersion, err := e.Storage.Versioner().ObjectResourceVersion(existing)
 		if err != nil {
 			return nil, nil, err
@@ -654,6 +664,7 @@ func (e *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 		if err != nil {
 			return nil, nil, err
 		}
+		klog.V(4).Infof("CRDValidationDebug: SSA: user intent: %s", toJSON(obj))
 
 		// If AllowUnconditionalUpdate() is true and the object specified by
 		// the user does not have a resource version, then we populate it with
@@ -709,6 +720,7 @@ func (e *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 			finishCreate = finishNothing
 			fn(ctx, true)
 
+			klog.V(4).Infof("CRDValidationDebug: SSA: merged object: %s", toJSON(obj))
 			return obj, &ttl, nil
 		}
 
@@ -787,8 +799,10 @@ func (e *Store) Update(ctx context.Context, name string, objInfo rest.UpdatedObj
 		fn(ctx, true)
 
 		if int64(ttl) != res.TTL {
+			klog.V(4).Infof("CRDValidationDebug: SSA: merged object: %s", toJSON(obj))
 			return obj, &ttl, nil
 		}
+		klog.V(4).Infof("CRDValidationDebug: SSA: merged object: %s", toJSON(obj))
 		return obj, nil, nil
 	}, dryrun.IsDryRun(options.DryRun), nil)
 

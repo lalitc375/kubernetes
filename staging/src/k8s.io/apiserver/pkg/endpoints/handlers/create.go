@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -27,6 +28,7 @@ import (
 	"unicode/utf8"
 
 	"go.opentelemetry.io/otel/attribute"
+	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -45,13 +47,21 @@ import (
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/apiserver/pkg/util/dryrun"
 	"k8s.io/component-base/tracing"
-	"k8s.io/klog/v2"
 )
 
 var namespaceGVR = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
 
 func createHandler(r rest.NamedCreater, scope *RequestScope, admit admission.Interface, includeName bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		// Log the raw request body for debugging.
+		if klog.V(4).Enabled() {
+			body, err := io.ReadAll(req.Body)
+			if err == nil {
+				req.Body = io.NopCloser(bytes.NewBuffer(body))
+				klog.V(4).Infof("CRDValidationDebug: Raw request: verb=%s, body=%s", req.Method, string(body))
+			}
+		}
+
 		ctx := req.Context()
 		// For performance tracking purposes.
 		ctx, span := tracing.Start(ctx, "Create", traceFields(req)...)

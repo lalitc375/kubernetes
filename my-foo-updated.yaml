@@ -1,0 +1,8 @@
+apiVersion: example.com/v1
+kind: Foo
+metadata:
+  name: my-foo
+spec:
+  arrayMap:
+  - key: a
+    value: Z

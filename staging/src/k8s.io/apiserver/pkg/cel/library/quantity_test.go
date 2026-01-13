@@ -320,6 +320,26 @@ func TestQuantity(t *testing.T) {
 			},
 		},
 		{
+			name:               "integer_division_by_zero",
+			expr:               `quantity("10000").divInt(0)`,
+			expectedRuntimeErr: "division by zero",
+		},
+		{
+			name:               "division_by_zero_default_round",
+			expr:               `quantity("10000").div(0)`,
+			expectedRuntimeErr: "division by zero",
+		},
+		{
+			name:               "division_by_zero_custom_round",
+			expr:               `quantity("10000").div(0, 2)`,
+			expectedRuntimeErr: "division by zero",
+		},
+		{
+			name:               "negative_rounding",
+			expr:               `quantity("10000").div(3, -1)`,
+			expectedRuntimeErr: "negative rounding values are not allowed",
+		},
+		{
 			name:        "integer_division",
 			expr:        `quantity("10000").divInt(3) == quantity("3333")`,
 			expectValue: trueVal,

@@ -631,13 +631,27 @@ func (q *Quantity) Sub(y Quantity) {
 }
 
 // Mul multiplies the provided y to the current value.
-// It will return false if the result is inexact. Otherwise, it will return true.
+// It will return false if the result is inexact or capped at the magnitude limit. Otherwise, it will return true.
 func (q *Quantity) Mul(y int64) bool {
 	q.s = ""
 	if q.d.Dec == nil && q.i.Mul(y) {
 		return true
 	}
-	return q.ToDec().d.Dec.Mul(q.d.Dec, inf.NewDec(y, inf.Scale(0))).UnscaledBig().IsInt64()
+	result := q.ToDec().d.Dec.Mul(q.d.Dec, inf.NewDec(y, inf.Scale(0)))
+
+	// stays in the limit
+	if result.Cmp(maxAllowed.Dec) > 0 {
+		result.Set(maxAllowed.Dec)
+		q.d.Dec = result
+		return false
+	}
+	if result.Cmp(new(inf.Dec).Neg(maxAllowed.Dec)) < 0 {
+		result.Set(maxAllowed.Dec).Neg(result)
+		q.d.Dec = result
+		return false
+	}
+
+	return result.UnscaledBig().IsInt64()
 }
 
 // QuoRound divides the current value by y and rounds the division result by roundVal digits.
@@ -652,40 +666,52 @@ func (q *Quantity) QuoRound(y int64, roundVal int64) bool {
 
 	q.s = ""
 	if q.d.Dec == nil {
-		realVal, _ := q.i.AsInt64()
-		infDec := inf.NewDec(realVal, inf.Scale(0))
-		infDec.QuoRound(infDec, inf.NewDec(y, inf.Scale(0)), inf.Scale(roundVal), inf.RoundDown)
-		if int64(infDec.Scale()) == 0 {
-			// the scale is zero. then infdec is directly representable as an int
-			if infDec.UnscaledBig().IsInt64() {
-				q.i = int64Amount{value: infDec.UnscaledBig().Int64()}
-				return true
-			}
-			q.i = int64Amount{value: math.MaxInt64}
-			return false
-		} else {
-			// the scale isn't zero, so the infDec might be a decimal. we need to check if after we bring it back to scale
-			// will there be remaining numbers after division by 10
-			if rem := new(big.Int).Set(infDec.UnscaledBig()).Mod(infDec.UnscaledBig(), big.NewInt(10)); rem.Int64() == 0 {
-				// bring it back to scale by dividing by dividing by 10^scale, we don't need to account for
-				// the remainder since we are doing integer division
-				s := int64(infDec.Scale())
-				e := new(big.Int).Exp(big.NewInt(10), big.NewInt(s), nil)
-				infDec.UnscaledBig().Quo(infDec.UnscaledBig(), e)
+		if realVal, ok := q.i.AsInt64(); ok {
+			infDec := inf.NewDec(realVal, inf.Scale(0))
+			infDec.QuoRound(infDec, inf.NewDec(y, inf.Scale(0)), inf.Scale(roundVal), inf.RoundDown)
+			if int64(infDec.Scale()) == 0 {
+				// the scale is zero. then infdec is directly representable as an int
 				if infDec.UnscaledBig().IsInt64() {
 					q.i = int64Amount{value: infDec.UnscaledBig().Int64()}
 					return true
 				}
-				q.i = int64Amount{value: math.MaxInt64}
-				return false
+			} else {
+				// the scale isn't zero, so the infDec might be a decimal. we need to check if after we bring it back to scale
+				// will there be remaining numbers after division by 10
+				if rem := new(big.Int).Set(infDec.UnscaledBig()).Mod(infDec.UnscaledBig(), big.NewInt(10)); rem.Int64() == 0 {
+					// bring it back to scale by dividing by dividing by 10^scale, we don't need to account for
+					// the remainder since we are doing integer division
+					s := int64(infDec.Scale())
+					e := new(big.Int).Exp(big.NewInt(10), big.NewInt(s), nil)
+					copy := new(big.Int).Set(infDec.UnscaledBig())
+					copy.Quo(copy, e)
+					if copy.IsInt64() {
+						q.i = int64Amount{value: copy.Int64()}
+						return true
+					}
+				}
 			}
+			q.d.Dec = infDec
+			return false
 		}
+	}
 
-		q.d.Dec = infDec
+	result := new(inf.Dec).QuoRound(q.AsDec(), inf.NewDec(y, inf.Scale(0)), inf.Scale(roundVal), inf.RoundDown)
+
+	// stays in the limit
+	if result.Cmp(maxAllowed.Dec) > 0 {
+		result.Set(maxAllowed.Dec)
+		q.d.Dec = result
 		return false
 	}
-	ret := q.ToDec().d.Dec.QuoRound(q.d.Dec, inf.NewDec(y, inf.Scale(0)), inf.Scale(roundVal), inf.RoundDown).UnscaledBig().IsInt64()
-	return ret
+	if result.Cmp(new(inf.Dec).Neg(maxAllowed.Dec)) < 0 {
+		result.Set(maxAllowed.Dec).Neg(result)
+		q.d.Dec = result
+		return false
+	}
+
+	q.d.Dec = result
+	return result.UnscaledBig().IsInt64()
 }
 
 // QuoIntegerDivision integer divides the current value by y and rounds towards zero (round down).
@@ -697,15 +723,36 @@ func (q *Quantity) QuoIntegerDivision(y int64) bool {
 
 	q.s = ""
 	if q.d.Dec == nil {
-		val, _ := q.i.AsInt64()
-		q.i = int64Amount{value: val / y}
-	} else {
-		// this is zero scaled so its ok here for us to use the unscaled big as the final value
-		result := new(inf.Dec).QuoRound(q.d.Dec, inf.NewDec(y, 0), 0, inf.RoundDown)
+		if val, ok := q.i.AsInt64(); ok {
+			q.i = int64Amount{value: val / y}
+			return true
+		}
+	}
+
+	// this is zero scaled so its ok here for us to use the unscaled big as the final value
+	result := new(inf.Dec).QuoRound(q.AsDec(), inf.NewDec(y, 0), 0, inf.RoundDown)
+
+	// stays in the limit
+	if result.Cmp(maxAllowed.Dec) > 0 {
+		result.Set(maxAllowed.Dec)
 		q.i = int64Amount{value: result.UnscaledBig().Int64()}
 		q.d.Dec = nil
+		return false
 	}
-	return true
+	if result.Cmp(new(inf.Dec).Neg(maxAllowed.Dec)) < 0 {
+		result.Set(maxAllowed.Dec).Neg(result)
+		q.i = int64Amount{value: result.UnscaledBig().Int64()}
+		q.d.Dec = nil
+		return false
+	}
+
+	if result.UnscaledBig().IsInt64() {
+		q.i = int64Amount{value: result.UnscaledBig().Int64()}
+		q.d.Dec = nil
+		return true
+	}
+	q.d.Dec = result
+	return false
 }
 
 // Cmp returns 0 if the quantity is equal to y, -1 if the quantity is less than y, or 1 if the

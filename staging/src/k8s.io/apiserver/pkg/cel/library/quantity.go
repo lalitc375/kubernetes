@@ -386,6 +386,9 @@ func quantityDivideIntDefaultRounding(arg ref.Val, div ref.Val) ref.Val {
 	if !ok {
 		return types.MaybeNoSuchOverloadErr(div)
 	}
+	if denominator == 0 {
+		return types.WrapErr(errors.New("division by zero"))
+	}
 
 	copy := *q
 	copy.QuoRound(denominator, 4)
@@ -403,6 +406,9 @@ func quantityIntegerDivision(arg ref.Val, div ref.Val) ref.Val {
 	denominator, ok := div.Value().(int64)
 	if !ok {
 		return types.MaybeNoSuchOverloadErr(div)
+	}
+	if denominator == 0 {
+		return types.WrapErr(errors.New("division by zero"))
 	}
 
 	copy := *q
@@ -422,10 +428,17 @@ func quantityDivideIntRound(args ...ref.Val) ref.Val {
 	if !ok {
 		return types.MaybeNoSuchOverloadErr(args[1])
 	}
+	if denominator == 0 {
+		return types.WrapErr(errors.New("division by zero"))
+	}
 
 	roundVal, ok := args[2].Value().(int64)
 	if !ok {
 		return types.MaybeNoSuchOverloadErr(args[2])
+	}
+
+	if roundVal < 0 {
+		return types.WrapErr(errors.New("negative rounding values are not allowed"))
 	}
 
 	if roundVal > 10 {

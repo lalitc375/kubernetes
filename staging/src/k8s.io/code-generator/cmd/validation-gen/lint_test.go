@@ -19,10 +19,41 @@ package main
 import (
 	"errors"
 	"regexp"
+	"strings"
 	"testing"
 
+	"k8s.io/code-generator/cmd/validation-gen/validators"
+	"k8s.io/gengo/v2/codetags"
 	"k8s.io/gengo/v2/types"
 )
+
+// fakeTagExtractor is a test implementation of tagExtractor that recognizes
+// a fixed set of tag names by simple prefix matching on "+k8s:" comments.
+type fakeTagExtractor struct {
+	// knownTags is the set of tag names (without "+") that this extractor
+	// considers to be valid validation tags, e.g. "k8s:minimum".
+	knownTags []string
+}
+
+func (f fakeTagExtractor) ExtractTags(_ validators.Context, comments []string) ([]codetags.Tag, error) {
+	var tags []codetags.Tag
+	for _, c := range comments {
+		for _, known := range f.knownTags {
+			if strings.HasPrefix(c, "+"+known) {
+				tags = append(tags, codetags.Tag{Name: known})
+			}
+		}
+	}
+	return tags, nil
+}
+
+// defaultFakeExtractor recognizes common validation tags for testing.
+var defaultFakeExtractor = fakeTagExtractor{
+	knownTags: []string{
+		"k8s:minimum", "k8s:maxItems", "k8s:maxLength", "k8s:enum",
+		"k8s:immutable", "k8s:format", "k8s:optional", "k8s:required",
+	},
+}
 
 func ruleAlwaysPass(comments []string) (string, error) {
 	return "", nil
@@ -435,6 +466,345 @@ func TestLintType(t *testing.T) {
 			}
 			if counter != tt.wantCount {
 				t.Errorf("expected %d rule invocations, got %d", tt.wantCount, counter)
+			}
+		})
+	}
+}
+
+func TestHasAnyValidationTag(t *testing.T) {
+	tests := []struct {
+		name     string
+		comments []string
+		want     bool
+	}{
+		{
+			name:     "empty",
+			comments: []string{},
+			want:     false,
+		},
+		{
+			name:     "no k8s tags",
+			comments: []string{"just a comment"},
+			want:     false,
+		},
+		{
+			name:     "optional only",
+			comments: []string{"+k8s:optional"},
+			want:     false,
+		},
+		{
+			name:     "required only",
+			comments: []string{"+k8s:required"},
+			want:     false,
+		},
+		{
+			name:     "unrecognized k8s tag",
+			comments: []string{"+k8s:openapi-gen=true"},
+			want:     false,
+		},
+		{
+			name:     "minimum tag",
+			comments: []string{"+k8s:minimum=0"},
+			want:     true,
+		},
+		{
+			name:     "enum tag",
+			comments: []string{"+k8s:enum={a,b}"},
+			want:     true,
+		},
+		{
+			name:     "mixed with optional",
+			comments: []string{"+k8s:optional", "+k8s:minimum=0"},
+			want:     true,
+		},
+	}
+
+	l := newLinter()
+	l.validator = defaultFakeExtractor
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := l.hasAnyValidationTag(tt.comments); got != tt.want {
+				t.Errorf("hasAnyValidationTag() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHasRequirednessTag(t *testing.T) {
+	tests := []struct {
+		name     string
+		comments []string
+		want     bool
+	}{
+		{
+			name:     "empty",
+			comments: []string{},
+			want:     false,
+		},
+		{
+			name:     "no requireness",
+			comments: []string{"+k8s:minimum=0"},
+			want:     false,
+		},
+		{
+			name:     "optional",
+			comments: []string{"+k8s:optional"},
+			want:     true,
+		},
+		{
+			name:     "required",
+			comments: []string{"+k8s:required"},
+			want:     true,
+		},
+		{
+			name:     "optional with value",
+			comments: []string{"+k8s:optional=true"},
+			want:     true,
+		},
+		{
+			name:     "conditional optional",
+			comments: []string{`+k8s:alpha(since:"1.35")=+k8s:optional`},
+			want:     true,
+		},
+		{
+			name:     "conditional required",
+			comments: []string{`+k8s:alpha(since:"1.35")=+k8s:required`},
+			want:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := hasRequirednessTag(tt.comments); got != tt.want {
+				t.Errorf("hasRequirednessTag() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLintRequiredness(t *testing.T) {
+	tests := []struct {
+		name           string
+		typeToLint     *types.Type
+		wantHasVal     bool
+		wantErrorCount int
+	}{
+		{
+			name: "pointer field without validation - no error",
+			typeToLint: &types.Type{
+				Name: types.Name{Package: "pkg", Name: "T"},
+				Kind: types.Struct,
+				Members: []types.Member{{
+					Name: "Foo",
+					Type: &types.Type{
+						Name: types.Name{Package: "pkg", Name: "Bar"},
+						Kind: types.Pointer,
+						Elem: &types.Type{Name: types.Name{Package: "", Name: "string"}},
+					},
+				}},
+			},
+			wantHasVal:     false,
+			wantErrorCount: 0,
+		},
+		{
+			name: "pointer field with direct validation, no requireness - error",
+			typeToLint: &types.Type{
+				Name: types.Name{Package: "pkg", Name: "T"},
+				Kind: types.Struct,
+				Members: []types.Member{{
+					Name:         "Foo",
+					CommentLines: []string{"+k8s:minimum=0"},
+					Type: &types.Type{
+						Name: types.Name{Package: "pkg", Name: "Bar"},
+						Kind: types.Pointer,
+						Elem: &types.Type{Name: types.Name{Package: "", Name: "int"}},
+					},
+				}},
+			},
+			wantHasVal:     true,
+			wantErrorCount: 1,
+		},
+		{
+			name: "pointer field with transitive validation, no requireness - error",
+			typeToLint: &types.Type{
+				Name: types.Name{Package: "pkg", Name: "T"},
+				Kind: types.Struct,
+				Members: []types.Member{{
+					Name: "Foo",
+					Type: &types.Type{
+						Name: types.Name{Package: "pkg", Name: "Nested"},
+						Kind: types.Pointer,
+						Elem: &types.Type{
+							Name: types.Name{Package: "pkg", Name: "Inner"},
+							Kind: types.Struct,
+							Members: []types.Member{{
+								Name:         "Bar",
+								CommentLines: []string{"+k8s:minimum=0"},
+								Type:         &types.Type{Name: types.Name{Package: "", Name: "int"}},
+							}},
+						},
+					},
+				}},
+			},
+			wantHasVal:     true,
+			wantErrorCount: 1,
+		},
+		{
+			name: "pointer field with validation and +k8s:optional - no error",
+			typeToLint: &types.Type{
+				Name: types.Name{Package: "pkg", Name: "T"},
+				Kind: types.Struct,
+				Members: []types.Member{{
+					Name:         "Foo",
+					CommentLines: []string{"+k8s:optional", "+k8s:minimum=0"},
+					Type: &types.Type{
+						Name: types.Name{Package: "pkg", Name: "Bar"},
+						Kind: types.Pointer,
+						Elem: &types.Type{Name: types.Name{Package: "", Name: "int"}},
+					},
+				}},
+			},
+			wantHasVal:     true,
+			wantErrorCount: 0,
+		},
+		{
+			name: "slice field with validation, no requireness - error",
+			typeToLint: &types.Type{
+				Name: types.Name{Package: "pkg", Name: "T"},
+				Kind: types.Struct,
+				Members: []types.Member{{
+					Name:         "Items",
+					CommentLines: []string{"+k8s:maxItems=10"},
+					Type: &types.Type{
+						Name: types.Name{Package: "pkg", Name: "List"},
+						Kind: types.Slice,
+						Elem: &types.Type{Name: types.Name{Package: "", Name: "string"}},
+					},
+				}},
+			},
+			wantHasVal:     true,
+			wantErrorCount: 1,
+		},
+		{
+			name: "map field with validation, no requireness - error",
+			typeToLint: &types.Type{
+				Name: types.Name{Package: "pkg", Name: "T"},
+				Kind: types.Struct,
+				Members: []types.Member{{
+					Name:         "Data",
+					CommentLines: []string{"+k8s:maxItems=5"},
+					Type: &types.Type{
+						Name: types.Name{Package: "pkg", Name: "M"},
+						Kind: types.Map,
+						Key:  &types.Type{Name: types.Name{Package: "", Name: "string"}},
+						Elem: &types.Type{Name: types.Name{Package: "", Name: "string"}},
+					},
+				}},
+			},
+			wantHasVal:     true,
+			wantErrorCount: 1,
+		},
+		{
+			name: "non-pointer struct field with validation - no error (exempt)",
+			typeToLint: &types.Type{
+				Name: types.Name{Package: "pkg", Name: "T"},
+				Kind: types.Struct,
+				Members: []types.Member{{
+					Name: "Nested",
+					Type: &types.Type{
+						Name:         types.Name{Package: "pkg", Name: "Inner"},
+						Kind:         types.Struct,
+						CommentLines: []string{"+k8s:minimum=0"},
+					},
+				}},
+			},
+			wantHasVal:     true,
+			wantErrorCount: 0,
+		},
+		{
+			name: "recursive type with pointer to self - no infinite loop",
+			typeToLint: func() *types.Type {
+				t := &types.Type{
+					Name: types.Name{Package: "pkg", Name: "Node"},
+					Kind: types.Struct,
+				}
+				t.Members = []types.Member{{
+					Name:         "Next",
+					CommentLines: []string{"+k8s:optional"},
+					Type: &types.Type{
+						Name: types.Name{Package: "pkg", Name: "NodePtr"},
+						Kind: types.Pointer,
+						Elem: t, // cycle
+					},
+				}}
+				return t
+			}(),
+			wantHasVal:     false,
+			wantErrorCount: 0,
+		},
+		{
+			name: "recursive type with validation - detects validation on first visit",
+			typeToLint: func() *types.Type {
+				t := &types.Type{
+					Name:         types.Name{Package: "pkg", Name: "Node"},
+					Kind:         types.Struct,
+					CommentLines: []string{"+k8s:immutable"},
+				}
+				t.Members = []types.Member{{
+					Name:         "Next",
+					CommentLines: []string{"+k8s:optional"},
+					Type: &types.Type{
+						Name: types.Name{Package: "pkg", Name: "NodePtr"},
+						Kind: types.Pointer,
+						Elem: t, // cycle
+					},
+				}}
+				return t
+			}(),
+			wantHasVal:     true,
+			wantErrorCount: 0,
+		},
+		{
+			name: "array field with transitive validation, no requireness - error",
+			typeToLint: &types.Type{
+				Name: types.Name{Package: "pkg", Name: "T"},
+				Kind: types.Struct,
+				Members: []types.Member{{
+					Name: "Arr",
+					Type: &types.Type{
+						Name: types.Name{Package: "pkg", Name: "ArrType"},
+						Kind: types.Array,
+						Elem: &types.Type{
+							Name:         types.Name{Package: "pkg", Name: "Inner"},
+							Kind:         types.Struct,
+							CommentLines: []string{"+k8s:enum={a,b}"},
+						},
+					},
+				}},
+			},
+			wantHasVal:     true,
+			wantErrorCount: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := newLinter()
+			l.validator = defaultFakeExtractor
+			gotHasVal, err := l.lintRequiredness(tt.typeToLint)
+			if err != nil {
+				t.Fatalf("lintRequiredness() unexpected error: %v", err)
+			}
+			if gotHasVal != tt.wantHasVal {
+				t.Errorf("lintRequiredness() hasValidation = %v, want %v", gotHasVal, tt.wantHasVal)
+			}
+			totalErrors := 0
+			for _, errs := range l.lintErrors {
+				totalErrors += len(errs)
+			}
+			if totalErrors != tt.wantErrorCount {
+				t.Errorf("lintRequiredness() error count = %d, want %d; errors: %v", totalErrors, tt.wantErrorCount, l.lintErrors)
 			}
 		})
 	}

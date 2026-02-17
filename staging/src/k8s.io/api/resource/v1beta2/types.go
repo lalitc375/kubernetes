@@ -301,6 +301,7 @@ type Device struct {
 	// The maximum number of attributes and capacities combined is 32.
 	//
 	// +optional
+	// +k8s:optional
 	Attributes map[QualifiedName]DeviceAttribute `json:"attributes,omitempty" protobuf:"bytes,2,rep,name=attributes"`
 
 	// Capacity defines the set of capacities for this device.
@@ -374,6 +375,7 @@ type Device struct {
 	// +optional
 	// +listType=atomic
 	// +featureGate=DRADeviceTaints
+	// +k8s:optional
 	Taints []DeviceTaint `json:"taints,omitempty" protobuf:"bytes,8,rep,name=taints"`
 
 	// BindsToNode indicates if the usage of an allocation involving this device
@@ -976,6 +978,7 @@ type ExactDeviceRequest struct {
 	// +optional
 	// +listType=atomic
 	// +featureGate=DRADeviceTaints
+	// +k8s:optional
 	Tolerations []DeviceToleration `json:"tolerations,omitempty" protobuf:"bytes,6,opt,name=tolerations"`
 
 	// Capacity define resource requirements against each capacity.
@@ -1091,6 +1094,7 @@ type DeviceSubRequest struct {
 	// +optional
 	// +listType=atomic
 	// +featureGate=DRADeviceTaints
+	// +k8s:optional
 	Tolerations []DeviceToleration `json:"tolerations,omitempty" protobuf:"bytes,6,opt,name=tolerations"`
 
 	// Capacity define resource requirements against each capacity.
@@ -1651,6 +1655,7 @@ type DeviceRequestAllocationResult struct {
 	// +optional
 	// +listType=atomic
 	// +featureGate=DRADeviceTaints
+	// +k8s:optional
 	Tolerations []DeviceToleration `json:"tolerations,omitempty" protobuf:"bytes,6,opt,name=tolerations"`
 
 	// BindingConditions contains a copy of the BindingConditions

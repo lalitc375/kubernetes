@@ -49,7 +49,7 @@ var podGroup = &scheduling.PodGroup{
 
 var (
 	fieldImmutableError    = "field is immutable"
-	minCountError          = "must be greater than zero"
+	minCountError          = "must be greater than or equal to 1"
 	oneOfError             = "must specify one of: `basic`, `gang`"
 	multipleFieldsSetError = "exactly one of `basic`, `gang` is required"
 )

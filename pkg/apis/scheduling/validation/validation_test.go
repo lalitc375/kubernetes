@@ -262,22 +262,6 @@ func TestValidateWorkload(t *testing.T) {
 				field.Invalid(field.NewPath("spec", "podGroupTemplates").Index(0).Child("schedulingPolicy"), "{`basic`, `gang`}", "exactly one of `basic`, `gang` is required, but multiple fields are set").MarkCoveredByDeclarative(),
 			},
 		},
-		"zero min count in gang": {
-			workload: mkWorkload(func(w *scheduling.Workload) {
-				w.Spec.PodGroupTemplates[1].SchedulingPolicy.Gang.MinCount = 0
-			}),
-			expectedErrs: field.ErrorList{
-				field.Required(field.NewPath("spec", "podGroupTemplates").Index(1).Child("schedulingPolicy", "gang", "minCount"), "").MarkCoveredByDeclarative(),
-			},
-		},
-		"negative min count in gang": {
-			workload: mkWorkload(func(w *scheduling.Workload) {
-				w.Spec.PodGroupTemplates[1].SchedulingPolicy.Gang.MinCount = -1
-			}),
-			expectedErrs: field.ErrorList{
-				field.Invalid(field.NewPath("spec", "podGroupTemplates").Index(1).Child("schedulingPolicy", "gang", "minCount"), int64(-1), "must be greater than zero").WithOrigin("minimum").MarkCoveredByDeclarative(),
-			},
-		},
 		"two pod groups with the same name": {
 			workload: mkWorkload(func(w *scheduling.Workload) {
 				w.Spec.PodGroupTemplates[1].Name = w.Spec.PodGroupTemplates[0].Name
@@ -334,14 +318,6 @@ func TestValidateWorkload(t *testing.T) {
 			}),
 			expectedErrs: field.ErrorList{
 				field.Invalid(field.NewPath("spec", "podGroupTemplates").Index(0).Child("schedulingPolicy"), "{`basic`, `gang`}", "exactly one of `basic`, `gang` is required, but multiple fields are set").MarkCoveredByDeclarative(),
-			},
-		},
-		"negative minCount in gang": {
-			workload: mkWorkload(func(w *scheduling.Workload) {
-				w.Spec.PodGroupTemplates[1].SchedulingPolicy.Gang.MinCount = -1
-			}),
-			expectedErrs: field.ErrorList{
-				field.Invalid(field.NewPath("spec", "podGroupTemplates").Index(1).Child("schedulingPolicy", "gang", "minCount"), int64(-1), "must be greater than zero").WithOrigin("minimum").MarkCoveredByDeclarative(),
 			},
 		},
 	}
@@ -577,22 +553,6 @@ func TestValidatePodGroup(t *testing.T) {
 			}),
 			expectedErrs: field.ErrorList{
 				field.Invalid(field.NewPath("spec").Child("podGroupTemplateRef"), "", "must specify one of: `workload`").MarkCoveredByDeclarative(),
-			},
-		},
-		"zero min count in gang": {
-			podGroup: mkPodGroup(func(pg *scheduling.PodGroup) {
-				pg.Spec.SchedulingPolicy.Gang.MinCount = 0
-			}),
-			expectedErrs: field.ErrorList{
-				field.Required(field.NewPath("spec").Child("schedulingPolicy", "gang", "minCount"), "").MarkCoveredByDeclarative(),
-			},
-		},
-		"negative minCount in gang": {
-			podGroup: mkPodGroup(func(pg *scheduling.PodGroup) {
-				pg.Spec.SchedulingPolicy.Gang.MinCount = -1
-			}),
-			expectedErrs: field.ErrorList{
-				field.Invalid(field.NewPath("spec").Child("schedulingPolicy", "gang", "minCount"), int64(-1), "must be greater than zero").WithOrigin("minimum").MarkCoveredByDeclarative(),
 			},
 		},
 		"multiple policies set": {

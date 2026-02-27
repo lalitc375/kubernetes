@@ -219,7 +219,7 @@ type PodGroupSpec struct {
 	// if a need for standalone, template-less Pod groups arises.
 	//
 	// +optional
-	// +k8s:alpha(since:"1.36")=+k8s:required
+	// +k8s:required
 	// +k8s:alpha(since:"1.36")=+k8s:immutable
 	PodGroupTemplateRef *PodGroupTemplateReference `json:"podGroupTemplateRef" protobuf:"bytes,1,opt,name=podGroupTemplateRef"`
 
@@ -279,7 +279,7 @@ type PodGroupTemplateReference struct {
 	// the PodGroup.
 	//
 	// +optional
-	// +k8s:alpha(since:"1.36")=+k8s:optional
+	// +k8s:optional
 	// +oneOf=TemplateReference
 	// +k8s:alpha(since:"1.36")=+k8s:unionMember
 	Workload *WorkloadPodGroupTemplateReference `json:"workload" protobuf:"bytes,1,opt,name=workload"`

@@ -180,7 +180,7 @@ func Validate_PodGroupSpec(ctx context.Context, op operation.Operation, fldPath 
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.RequiredPointer(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.RequiredPointer(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				errs = append(errs, e...)
 				earlyReturn = true
 			}
@@ -285,7 +285,7 @@ func Validate_PodGroupTemplateReference(ctx context.Context, op operation.Operat
 			}
 			// call field-attached validations
 			earlyReturn := false
-			if e := validate.OptionalPointer(ctx, op, fldPath, obj, oldObj).MarkAlpha(); len(e) != 0 {
+			if e := validate.OptionalPointer(ctx, op, fldPath, obj, oldObj); len(e) != 0 {
 				earlyReturn = true
 			}
 			if earlyReturn {

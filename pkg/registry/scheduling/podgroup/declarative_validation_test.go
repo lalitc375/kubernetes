@@ -70,7 +70,7 @@ func testDeclarativeValidate(t *testing.T, apiVersion string) {
 		},
 		"no podGroupTemplateRef": {
 			input:        mkValidPodGroup(unsetPodGroupTemplateRef()),
-			expectedErrs: field.ErrorList{field.Required(field.NewPath("spec", "podGroupTemplateRef"), "").MarkAlpha()},
+			expectedErrs: field.ErrorList{field.Required(field.NewPath("spec", "podGroupTemplateRef"), "")},
 		},
 		"empty podGroupTemplateRef": {
 			input:        mkValidPodGroup(setEmptyPodGroupTemplateRef()),
@@ -147,7 +147,7 @@ func testDeclarativeValidateUpdate(t *testing.T, apiVersion string) {
 			oldObj:    mkValidPodGroup(setResourceVersion("1")),
 			updateObj: mkValidPodGroup(setResourceVersion("1"), unsetPodGroupTemplateRef()),
 			expectedErrs: field.ErrorList{
-				field.Required(field.NewPath("spec", "podGroupTemplateRef"), "").MarkAlpha(),
+				field.Required(field.NewPath("spec", "podGroupTemplateRef"), ""),
 				field.Invalid(field.NewPath("spec", "podGroupTemplateRef"), nil, "field is immutable").WithOrigin("immutable").MarkAlpha(),
 			},
 		},

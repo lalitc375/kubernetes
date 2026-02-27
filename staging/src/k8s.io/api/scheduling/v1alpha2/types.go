@@ -76,7 +76,7 @@ type WorkloadSpec struct {
 	// +required
 	// +listType=map
 	// +listMapKey=name
-	// +k8s:alpha(since:"1.36")=+k8s:required
+	// +k8s:required
 	// +k8s:alpha(since:"1.36")=+k8s:listType=map
 	// +k8s:alpha(since:"1.36")=+k8s:listMapKey=name
 	// +k8s:alpha(since:"1.36")=+k8s:maxItems=8
@@ -134,7 +134,7 @@ type PodGroupSchedulingPolicy struct {
 	// standard Kubernetes scheduling behavior.
 	//
 	// +optional
-	// +k8s:alpha(since:"1.36")=+k8s:optional
+	// +k8s:optional
 	// +oneOf=PolicySelection
 	// +k8s:alpha(since:"1.36")=+k8s:unionMember
 	Basic *BasicSchedulingPolicy `json:"basic,omitempty" protobuf:"bytes,1,opt,name=basic"`
@@ -143,7 +143,7 @@ type PodGroupSchedulingPolicy struct {
 	// all-or-nothing semantics.
 	//
 	// +optional
-	// +k8s:alpha(since:"1.36")=+k8s:optional
+	// +k8s:optional
 	// +oneOf=PolicySelection
 	// +k8s:alpha(since:"1.36")=+k8s:unionMember
 	Gang *GangSchedulingPolicy `json:"gang,omitempty" protobuf:"bytes,2,opt,name=gang"`

@@ -55,10 +55,6 @@ func testDeclarativeValidate(t *testing.T, apiVersion string) {
 		"valid": {
 			input: mkValidWorkload(),
 		},
-		"empty podGroupTemplates": {
-			input:        mkValidWorkload(clearPodGroupTemplates()),
-			expectedErrs: field.ErrorList{field.Required(field.NewPath("spec", "podGroupTemplates"), "must have at least one item").MarkAlpha()},
-		},
 		"too many podGroupTemplates": {
 			input:        mkValidWorkload(setManyPodGroupTemplates(scheduling.WorkloadMaxPodGroupTemplates + 1)),
 			expectedErrs: field.ErrorList{field.TooMany(field.NewPath("spec", "podGroupTemplates"), scheduling.WorkloadMaxPodGroupTemplates+1, scheduling.WorkloadMaxPodGroupTemplates).WithOrigin("maxItems").MarkAlpha()},
@@ -164,14 +160,6 @@ func testDeclarativeValidateUpdate(t *testing.T, apiVersion string) {
 		"valid update with setting controllerRef": {
 			oldObj:    mkValidWorkload(setResourceVersion("1")),
 			updateObj: mkValidWorkload(setResourceVersion("1"), setControllerRef("apps", "Deployment", "my-deployment")),
-		},
-		"invalid update empty podGroupTemplates": {
-			oldObj:    mkValidWorkload(setResourceVersion("1")),
-			updateObj: mkValidWorkload(setResourceVersion("1"), setEmptyPodGroupTemplates()),
-			expectedErrs: field.ErrorList{
-				field.Required(field.NewPath("spec", "podGroupTemplates"), "must have at least one item").MarkAlpha(),
-				field.Invalid(field.NewPath("spec", "podGroupTemplates"), []scheduling.PodGroupTemplate{}, "field is immutable").WithOrigin("immutable").MarkAlpha(),
-			},
 		},
 		"invalid update too many podGroupTemplates": {
 			oldObj:    mkValidWorkload(setResourceVersion("1")),

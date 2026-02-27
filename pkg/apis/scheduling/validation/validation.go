@@ -78,9 +78,7 @@ func ValidatePodGroup(podGroup *scheduling.PodGroup) field.ErrorList {
 
 func validatePodGroupSpec(spec *scheduling.PodGroupSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
-	if spec.PodGroupTemplateRef == nil {
-		allErrs = append(allErrs, field.Required(fldPath.Child("podGroupTemplateRef"), "").MarkCoveredByDeclarative())
-	} else {
+	if spec.PodGroupTemplateRef != nil {
 		allErrs = append(allErrs, validatePodGroupTemplateRef(spec.PodGroupTemplateRef, fldPath.Child("podGroupTemplateRef"))...)
 	}
 	allErrs = append(allErrs, validatePodGroupSchedulingPolicy(&spec.SchedulingPolicy, fldPath.Child("schedulingPolicy"))...)
@@ -103,9 +101,6 @@ func ValidatePodGroupUpdate(podGroup, oldPodGroup *scheduling.PodGroup) field.Er
 
 func validatePodGroupSpecUpdate(spec, oldSpec *scheduling.PodGroupSpec, fldPath *field.Path) field.ErrorList {
 	allErrs := apivalidation.ValidateImmutableField(spec.PodGroupTemplateRef, oldSpec.PodGroupTemplateRef, fldPath.Child("podGroupTemplateRef")).WithOrigin("immutable").MarkCoveredByDeclarative()
-	if spec.PodGroupTemplateRef == nil {
-		allErrs = append(allErrs, field.Required(fldPath.Child("podGroupTemplateRef"), "").MarkCoveredByDeclarative())
-	}
 	allErrs = append(allErrs, apivalidation.ValidateImmutableField(spec.SchedulingPolicy, oldSpec.SchedulingPolicy, fldPath.Child("schedulingPolicy")).WithOrigin("immutable").MarkCoveredByDeclarative()...)
 	return allErrs
 }

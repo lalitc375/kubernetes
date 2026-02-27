@@ -66,7 +66,7 @@ type WorkloadSpec struct {
 	// When set, it cannot be changed.
 	//
 	// +optional
-	// +k8s:alpha(since:"1.36")=+k8s:optional
+	// +k8s:optional
 	// +k8s:alpha(since:"1.36")=+k8s:update=NoModify
 	ControllerRef *TypedLocalObjectReference `json:"controllerRef,omitempty" protobuf:"bytes,1,opt,name=controllerRef"`
 
@@ -92,22 +92,22 @@ type TypedLocalObjectReference struct {
 	// It must be a DNS subdomain.
 	//
 	// +optional
-	// +k8s:alpha(since:"1.36")=+k8s:optional
-	// +k8s:alpha(since:"1.36")=+k8s:format=k8s-long-name
+	// +k8s:optional
+	// +k8s:format=k8s-long-name
 	APIGroup string `json:"apiGroup,omitempty" protobuf:"bytes,1,opt,name=apiGroup"`
 	// Kind is the type of resource being referenced.
 	// It must be a path segment name.
 	//
 	// +required
-	// +k8s:alpha(since:"1.36")=+k8s:required
-	// +k8s:alpha(since:"1.36")=+k8s:format=k8s-path-segment-name
+	// +k8s:required
+	// +k8s:format=k8s-path-segment-name
 	Kind string `json:"kind" protobuf:"bytes,2,opt,name=kind"`
 	// Name is the name of resource being referenced.
 	// It must be a path segment name.
 	//
 	// +required
-	// +k8s:alpha(since:"1.36")=+k8s:required
-	// +k8s:alpha(since:"1.36")=+k8s:format=k8s-path-segment-name
+	// +k8s:required
+	// +k8s:format=k8s-path-segment-name
 	Name string `json:"name" protobuf:"bytes,3,opt,name=name"`
 }
 
@@ -117,8 +117,8 @@ type PodGroupTemplate struct {
 	// It must be a DNS label. This field is immutable.
 	//
 	// +required
-	// +k8s:alpha(since:"1.36")=+k8s:required
-	// +k8s:alpha(since:"1.36")=+k8s:format=k8s-short-name
+	// +k8s:required
+	// +k8s:format=k8s-short-name
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// SchedulingPolicy defines the scheduling policy for this PodGroupTemplate.
@@ -290,14 +290,14 @@ type WorkloadPodGroupTemplateReference struct {
 	// WorkloadName defines the name of the Workload object.
 	//
 	// +required
-	// +k8s:alpha(since:"1.36")=+k8s:required
-	// +k8s:alpha(since:"1.36")=+k8s:format=k8s-short-name
+	// +k8s:required
+	// +k8s:format=k8s-short-name
 	WorkloadName string `json:"workloadName" protobuf:"bytes,1,opt,name=workloadName"`
 
 	// PodGroupTemplateName defines the PodGroupTemplate name within the Workload object.
 	//
 	// +required
-	// +k8s:alpha(since:"1.36")=+k8s:required
-	// +k8s:alpha(since:"1.36")=+k8s:format=k8s-short-name
+	// +k8s:required
+	// +k8s:format=k8s-short-name
 	PodGroupTemplateName string `json:"podGroupTemplateName" protobuf:"bytes,2,opt,name=podGroupTemplateName"`
 }

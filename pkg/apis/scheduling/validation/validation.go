@@ -21,11 +21,9 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/operation"
-	"k8s.io/apimachinery/pkg/api/validate/content"
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	metav1validation "k8s.io/apimachinery/pkg/apis/meta/v1/validation"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	apivalidation "k8s.io/kubernetes/pkg/apis/core/validation"
 	"k8s.io/kubernetes/pkg/apis/scheduling"
@@ -93,26 +91,7 @@ func validatePodGroupTemplateRef(ref *scheduling.PodGroupTemplateReference, fldP
 	if ref.Workload == nil {
 		return field.ErrorList{field.Invalid(fldPath, "", "must specify one of: `workload`").WithOrigin("union").MarkCoveredByDeclarative()}
 	}
-	return validateWorkloadPodGroupTemplateRef(ref.Workload, fldPath.Child("workload"))
-}
-
-func validateWorkloadPodGroupTemplateRef(ref *scheduling.WorkloadPodGroupTemplateReference, fldPath *field.Path) field.ErrorList {
-	var allErrs = field.ErrorList{}
-	if ref.WorkloadName == "" {
-		allErrs = append(allErrs, field.Required(fldPath.Child("workloadName"), "").MarkCoveredByDeclarative())
-	} else {
-		for _, detail := range validateWorkloadName(ref.WorkloadName, false) {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("workloadName"), ref.WorkloadName, detail).WithOrigin("format=k8s-short-name").MarkCoveredByDeclarative())
-		}
-	}
-	if ref.PodGroupTemplateName == "" {
-		allErrs = append(allErrs, field.Required(fldPath.Child("podGroupTemplateName"), "").MarkCoveredByDeclarative())
-	} else {
-		for _, detail := range apivalidation.ValidatePodGroupName(ref.PodGroupTemplateName, false) {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("podGroupTemplateName"), ref.PodGroupTemplateName, detail).WithOrigin("format=k8s-short-name").MarkCoveredByDeclarative())
-		}
-	}
-	return allErrs
+	return nil
 }
 
 // ValidatePodGroupUpdate tests if an update to PodGroup is valid.
@@ -140,9 +119,6 @@ func ValidateWorkload(workload *scheduling.Workload) field.ErrorList {
 
 func validateWorkloadSpec(spec *scheduling.WorkloadSpec, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
-	if spec.ControllerRef != nil {
-		allErrs = append(allErrs, validateControllerRef(spec.ControllerRef, fldPath.Child("controllerRef"))...)
-	}
 	allErrs = append(allErrs, validatePodGroupTemplates(fldPath, spec, operation.Create)...)
 	return allErrs
 }
@@ -164,42 +140,8 @@ func validatePodGroupTemplates(fldPath *field.Path, spec *scheduling.WorkloadSpe
 	return allErrs
 }
 
-func validateControllerRef(ref *scheduling.TypedLocalObjectReference, fldPath *field.Path) field.ErrorList {
-	var allErrs = field.ErrorList{}
-	if ref.APIGroup != "" {
-		for _, msg := range validation.IsDNS1123Subdomain(ref.APIGroup) {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("apiGroup"), ref.APIGroup, msg).WithOrigin("format=k8s-long-name").MarkCoveredByDeclarative())
-		}
-	}
-	if ref.Kind == "" {
-		allErrs = append(allErrs, field.Required(fldPath.Child("kind"), "").MarkCoveredByDeclarative())
-	} else {
-		for _, msg := range content.IsPathSegmentName(ref.Kind) {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("kind"), ref.Kind, msg).WithOrigin("format=k8s-path-segment-name").MarkCoveredByDeclarative())
-		}
-	}
-	if ref.Name == "" {
-		allErrs = append(allErrs, field.Required(fldPath.Child("name"), "").MarkCoveredByDeclarative())
-	} else {
-		for _, msg := range content.IsPathSegmentName(ref.Name) {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("name"), ref.Name, msg).WithOrigin("format=k8s-path-segment-name").MarkCoveredByDeclarative())
-		}
-	}
-	return allErrs
-}
-
 func validatePodGroupTemplate(podGroupTemplate *scheduling.PodGroupTemplate, fldPath *field.Path, existingPodGroupTemplates sets.Set[string]) field.ErrorList {
 	var allErrs field.ErrorList
-	// To match the declarative validation behavior, we return Required for empty string.
-	// Declarative validation treats "" as "missing" via validate.RequiredValue()
-	// and returns early before checking the format constraint.
-	if podGroupTemplate.Name == "" {
-		allErrs = append(allErrs, field.Required(fldPath.Child("name"), "").MarkCoveredByDeclarative())
-	} else {
-		for _, detail := range apivalidation.ValidatePodGroupName(podGroupTemplate.Name, false) {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("name"), podGroupTemplate.Name, detail).WithOrigin("format=k8s-short-name").MarkCoveredByDeclarative())
-		}
-	}
 	if existingPodGroupTemplates.Has(podGroupTemplate.Name) {
 		// MarkCoveredByDeclarative is not needed here because the duplicate check is done.
 		allErrs = append(allErrs, field.Duplicate(fldPath, podGroupTemplate.Name).MarkCoveredByDeclarative())
@@ -267,8 +209,6 @@ func validateWorkloadSpecUpdate(spec, oldSpec *scheduling.WorkloadSpec, fldPath 
 	var allErrs field.ErrorList
 	if oldSpec.ControllerRef != nil {
 		allErrs = append(allErrs, apimachineryvalidation.ValidateImmutableField(spec.ControllerRef, oldSpec.ControllerRef, fldPath.Child("controllerRef")).WithOrigin("update").MarkCoveredByDeclarative()...)
-	} else if spec.ControllerRef != nil {
-		allErrs = append(allErrs, validateControllerRef(spec.ControllerRef, fldPath.Child("controllerRef"))...)
 	}
 	allErrs = append(allErrs, apivalidation.ValidateImmutableField(spec.PodGroupTemplates, oldSpec.PodGroupTemplates, fldPath.Child("podGroupTemplates")).WithOrigin("immutable").MarkCoveredByDeclarative()...)
 	allErrs = append(allErrs, validatePodGroupTemplates(fldPath, spec, operation.Update)...)

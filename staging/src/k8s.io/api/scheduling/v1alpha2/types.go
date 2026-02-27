@@ -77,9 +77,9 @@ type WorkloadSpec struct {
 	// +listType=map
 	// +listMapKey=name
 	// +k8s:required
-	// +k8s:alpha(since:"1.36")=+k8s:listType=map
-	// +k8s:alpha(since:"1.36")=+k8s:listMapKey=name
-	// +k8s:alpha(since:"1.36")=+k8s:maxItems=8
+	// +k8s:listType=map
+	// +k8s:listMapKey=name
+	// +k8s:maxItems=8
 	// +k8s:alpha(since:"1.36")=+k8s:immutable
 	PodGroupTemplates []PodGroupTemplate `json:"podGroupTemplates" protobuf:"bytes,2,rep,name=podGroupTemplates"`
 }
@@ -136,7 +136,7 @@ type PodGroupSchedulingPolicy struct {
 	// +optional
 	// +k8s:optional
 	// +oneOf=PolicySelection
-	// +k8s:alpha(since:"1.36")=+k8s:unionMember
+	// +k8s:unionMember
 	Basic *BasicSchedulingPolicy `json:"basic,omitempty" protobuf:"bytes,1,opt,name=basic"`
 
 	// Gang specifies that the pods in this group should be scheduled using
@@ -145,7 +145,7 @@ type PodGroupSchedulingPolicy struct {
 	// +optional
 	// +k8s:optional
 	// +oneOf=PolicySelection
-	// +k8s:alpha(since:"1.36")=+k8s:unionMember
+	// +k8s:unionMember
 	Gang *GangSchedulingPolicy `json:"gang,omitempty" protobuf:"bytes,2,opt,name=gang"`
 }
 
@@ -281,7 +281,7 @@ type PodGroupTemplateReference struct {
 	// +optional
 	// +k8s:optional
 	// +oneOf=TemplateReference
-	// +k8s:alpha(since:"1.36")=+k8s:unionMember
+	// +k8s:unionMember
 	Workload *WorkloadPodGroupTemplateReference `json:"workload" protobuf:"bytes,1,opt,name=workload"`
 }
 

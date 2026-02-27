@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/operation"
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	metav1validation "k8s.io/apimachinery/pkg/apis/meta/v1/validation"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	apivalidation "k8s.io/kubernetes/pkg/apis/core/validation"
 	"k8s.io/kubernetes/pkg/apis/scheduling"
@@ -120,56 +119,30 @@ func validateWorkloadSpec(spec *scheduling.WorkloadSpec, fldPath *field.Path) fi
 
 func validatePodGroupTemplates(fldPath *field.Path, spec *scheduling.WorkloadSpec, op operation.Type) field.ErrorList {
 	var allErrs field.ErrorList
-	existingPodGroups := sets.New[string]()
 	podGroupsPath := fldPath.Child("podGroupTemplates")
-	if len(spec.PodGroupTemplates) == 0 {
-		allErrs = append(allErrs, field.Required(podGroupsPath, "must have at least one item").MarkCoveredByDeclarative())
-	} else if len(spec.PodGroupTemplates) > scheduling.WorkloadMaxPodGroupTemplates {
-		allErrs = append(allErrs, field.TooMany(podGroupsPath, len(spec.PodGroupTemplates), scheduling.WorkloadMaxPodGroupTemplates).WithOrigin("maxItems").MarkCoveredByDeclarative())
-	} else if op != operation.Update {
+	if op != operation.Update {
 		// spec.PodGroupTemplates is immutable after create.
 		for i := range spec.PodGroupTemplates {
-			allErrs = append(allErrs, validatePodGroupTemplate(&spec.PodGroupTemplates[i], podGroupsPath.Index(i), existingPodGroups)...)
+			allErrs = append(allErrs, validatePodGroupTemplate(&spec.PodGroupTemplates[i], podGroupsPath.Index(i))...)
 		}
 	}
 	return allErrs
 }
 
-func validatePodGroupTemplate(podGroupTemplate *scheduling.PodGroupTemplate, fldPath *field.Path, existingPodGroupTemplates sets.Set[string]) field.ErrorList {
+func validatePodGroupTemplate(podGroupTemplate *scheduling.PodGroupTemplate, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
-	if existingPodGroupTemplates.Has(podGroupTemplate.Name) {
-		// MarkCoveredByDeclarative is not needed here because the duplicate check is done.
-		allErrs = append(allErrs, field.Duplicate(fldPath, podGroupTemplate.Name).MarkCoveredByDeclarative())
-	} else {
-		existingPodGroupTemplates.Insert(podGroupTemplate.Name)
-	}
 	allErrs = append(allErrs, validatePodGroupSchedulingPolicy(&podGroupTemplate.SchedulingPolicy, fldPath.Child("schedulingPolicy"))...)
 	return allErrs
 }
 
 func validatePodGroupSchedulingPolicy(policy *scheduling.PodGroupSchedulingPolicy, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
-	var setFields []string
-
 	if policy.Basic != nil {
-		setFields = append(setFields, "`basic`")
+		allErrs = append(allErrs, validateBasicSchedulingPolicy(policy.Basic, fldPath.Child("basic"))...)
 	}
 	if policy.Gang != nil {
-		setFields = append(setFields, "`gang`")
-	}
-
-	switch {
-	case len(setFields) == 0:
-		allErrs = append(allErrs, field.Invalid(fldPath, "", "must specify one of: `basic`, `gang`").WithOrigin("union").MarkCoveredByDeclarative())
-	case len(setFields) > 1:
-		allErrs = append(allErrs, field.Invalid(fldPath, fmt.Sprintf("{%s}", strings.Join(setFields, ", ")),
-			"exactly one of `basic`, `gang` is required, but multiple fields are set").WithOrigin("union").MarkCoveredByDeclarative())
-	case policy.Basic != nil:
-		allErrs = append(allErrs, validateBasicSchedulingPolicy(policy.Basic, fldPath.Child("basic"))...)
-	case policy.Gang != nil:
 		allErrs = append(allErrs, validateGangSchedulingPolicy(policy.Gang, fldPath.Child("gang"))...)
 	}
-
 	return allErrs
 }
 

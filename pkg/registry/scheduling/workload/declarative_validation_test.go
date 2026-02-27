@@ -55,10 +55,6 @@ func testDeclarativeValidate(t *testing.T, apiVersion string) {
 		"valid": {
 			input: mkValidWorkload(),
 		},
-		"too many podGroupTemplates": {
-			input:        mkValidWorkload(setManyPodGroupTemplates(scheduling.WorkloadMaxPodGroupTemplates + 1)),
-			expectedErrs: field.ErrorList{field.TooMany(field.NewPath("spec", "podGroupTemplates"), scheduling.WorkloadMaxPodGroupTemplates+1, scheduling.WorkloadMaxPodGroupTemplates).WithOrigin("maxItems").MarkAlpha()},
-		},
 		"empty podGroupTemplate name": {
 			input:        mkValidWorkload(setPodGroupName(0, "")),
 			expectedErrs: field.ErrorList{field.Required(field.NewPath("spec", "podGroupTemplates").Index(0).Child("name"), "")},
@@ -66,10 +62,6 @@ func testDeclarativeValidate(t *testing.T, apiVersion string) {
 		"invalid podGroupTemplate name": {
 			input:        mkValidWorkload(setPodGroupName(0, "Invalid_Name")),
 			expectedErrs: field.ErrorList{field.Invalid(field.NewPath("spec", "podGroupTemplates").Index(0).Child("name"), nil, "").WithOrigin("format=k8s-short-name")},
-		},
-		"duplicate podGroupTemplate names": {
-			input:        mkValidWorkload(addPodGroupTemplate("main")),
-			expectedErrs: field.ErrorList{field.Duplicate(field.NewPath("spec", "podGroupTemplates").Index(1), nil).MarkAlpha()},
 		},
 		// Declarative validation treats 0 as "missing" and returns Required error
 		// instead of checking minimum constraint and returning Invalid error.
@@ -115,14 +107,6 @@ func testDeclarativeValidate(t *testing.T, apiVersion string) {
 			input:        mkValidWorkload(setControllerRef("apps", "Deployment", "my%deployment")),
 			expectedErrs: field.ErrorList{field.Invalid(field.NewPath("spec", "controllerRef", "name"), nil, "").WithOrigin("format=k8s-path-segment-name")},
 		},
-		"policy with neither basic nor gang": {
-			input:        mkValidWorkload(clearPodGroupPolicy(0)),
-			expectedErrs: field.ErrorList{field.Invalid(field.NewPath("spec", "podGroupTemplates").Index(0).Child("schedulingPolicy"), nil, "").WithOrigin("union").MarkAlpha()},
-		},
-		"policy with both basic and gang": {
-			input:        mkValidWorkload(setBothPolicies(0)),
-			expectedErrs: field.ErrorList{field.Invalid(field.NewPath("spec", "podGroupTemplates").Index(0).Child("schedulingPolicy"), nil, "").WithOrigin("union").MarkAlpha()},
-		},
 		"valid with basic policy": {
 			input: mkValidWorkload(setBasicPolicy(0)),
 		},
@@ -160,14 +144,6 @@ func testDeclarativeValidateUpdate(t *testing.T, apiVersion string) {
 		"valid update with setting controllerRef": {
 			oldObj:    mkValidWorkload(setResourceVersion("1")),
 			updateObj: mkValidWorkload(setResourceVersion("1"), setControllerRef("apps", "Deployment", "my-deployment")),
-		},
-		"invalid update too many podGroupTemplates": {
-			oldObj:    mkValidWorkload(setResourceVersion("1")),
-			updateObj: mkValidWorkload(setResourceVersion("1"), setManyPodGroupTemplates(scheduling.WorkloadMaxPodGroupTemplates+1)),
-			expectedErrs: field.ErrorList{
-				field.TooMany(field.NewPath("spec", "podGroupTemplates"), scheduling.WorkloadMaxPodGroupTemplates+1, scheduling.WorkloadMaxPodGroupTemplates).WithOrigin("maxItems").MarkAlpha(),
-				field.Invalid(field.NewPath("spec", "podGroupTemplates"), nil, "field is immutable").WithOrigin("immutable").MarkAlpha(),
-			},
 		},
 		"invalid update podGroupTemplate": {
 			oldObj:       mkValidWorkload(setResourceVersion("1")),

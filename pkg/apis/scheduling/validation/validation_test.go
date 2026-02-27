@@ -17,7 +17,6 @@ limitations under the License.
 package validation
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -252,74 +251,6 @@ func TestValidateWorkload(t *testing.T) {
 				field.Invalid(field.NewPath("metadata", "namespace"), strings.Repeat("n", 64), "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')"),
 			},
 		},
-		"two policies": {
-			workload: mkWorkload(func(w *scheduling.Workload) {
-				w.Spec.PodGroupTemplates[0].SchedulingPolicy.Gang = &scheduling.GangSchedulingPolicy{
-					MinCount: 2,
-				}
-			}),
-			expectedErrs: field.ErrorList{
-				field.Invalid(field.NewPath("spec", "podGroupTemplates").Index(0).Child("schedulingPolicy"), "{`basic`, `gang`}", "exactly one of `basic`, `gang` is required, but multiple fields are set").MarkCoveredByDeclarative(),
-			},
-		},
-		"two pod groups with the same name": {
-			workload: mkWorkload(func(w *scheduling.Workload) {
-				w.Spec.PodGroupTemplates[1].Name = w.Spec.PodGroupTemplates[0].Name
-			}),
-			expectedErrs: field.ErrorList{
-				field.Duplicate(field.NewPath("spec", "podGroupTemplates").Index(1), scheduling.PodGroupTemplate{Name: "group1", SchedulingPolicy: scheduling.PodGroupSchedulingPolicy{Gang: &scheduling.GangSchedulingPolicy{MinCount: 1}}}).MarkCoveredByDeclarative(),
-			},
-		},
-		"no pod groups": {
-			workload: mkWorkload(func(w *scheduling.Workload) {
-				w.Spec.PodGroupTemplates = nil
-			}),
-			expectedErrs: field.ErrorList{
-				field.Required(field.NewPath("spec", "podGroupTemplates"), "must have at least one item").MarkCoveredByDeclarative(),
-			},
-		},
-		"too many pod group templates": {
-			workload: mkWorkload(func(w *scheduling.Workload) {
-				w.Spec.PodGroupTemplates = nil
-				for i := range scheduling.WorkloadMaxPodGroupTemplates + 1 {
-					w.Spec.PodGroupTemplates = append(w.Spec.PodGroupTemplates, scheduling.PodGroupTemplate{
-						Name: fmt.Sprintf("group-%v", i),
-						SchedulingPolicy: scheduling.PodGroupSchedulingPolicy{
-							Basic: &scheduling.BasicSchedulingPolicy{},
-						},
-					})
-				}
-			}),
-			expectedErrs: field.ErrorList{
-				field.TooMany(field.NewPath("spec", "podGroupTemplates"), scheduling.WorkloadMaxPodGroupTemplates+1, scheduling.WorkloadMaxPodGroupTemplates).WithOrigin("maxItems").MarkCoveredByDeclarative(),
-			},
-		},
-		"duplicate pod group names": {
-			workload: mkWorkload(func(w *scheduling.Workload) {
-				w.Spec.PodGroupTemplates[1].Name = w.Spec.PodGroupTemplates[0].Name
-			}),
-			expectedErrs: field.ErrorList{
-				field.Duplicate(field.NewPath("spec", "podGroupTemplates").Index(1), scheduling.PodGroupTemplate{Name: "group1", SchedulingPolicy: scheduling.PodGroupSchedulingPolicy{Gang: &scheduling.GangSchedulingPolicy{MinCount: 1}}}).MarkCoveredByDeclarative(),
-			},
-		},
-		"no policy set": {
-			workload: mkWorkload(func(w *scheduling.Workload) {
-				w.Spec.PodGroupTemplates[0].SchedulingPolicy = scheduling.PodGroupSchedulingPolicy{}
-			}),
-			expectedErrs: field.ErrorList{
-				field.Invalid(field.NewPath("spec", "podGroupTemplates").Index(0).Child("schedulingPolicy"), "", "must specify one of: `basic`, `gang`").MarkCoveredByDeclarative(),
-			},
-		},
-		"multiple policies set": {
-			workload: mkWorkload(func(w *scheduling.Workload) {
-				w.Spec.PodGroupTemplates[0].SchedulingPolicy.Gang = &scheduling.GangSchedulingPolicy{
-					MinCount: 2,
-				}
-			}),
-			expectedErrs: field.ErrorList{
-				field.Invalid(field.NewPath("spec", "podGroupTemplates").Index(0).Child("schedulingPolicy"), "{`basic`, `gang`}", "exactly one of `basic`, `gang` is required, but multiple fields are set").MarkCoveredByDeclarative(),
-			},
-		},
 	}
 
 	for name, tc := range failureCases {
@@ -545,22 +476,6 @@ func TestValidatePodGroup(t *testing.T) {
 			}),
 			expectedErrs: field.ErrorList{
 				field.Invalid(field.NewPath("spec").Child("podGroupTemplateRef"), "", "must specify one of: `workload`").MarkCoveredByDeclarative(),
-			},
-		},
-		"multiple policies set": {
-			podGroup: mkPodGroup(func(pg *scheduling.PodGroup) {
-				pg.Spec.SchedulingPolicy.Basic = &scheduling.BasicSchedulingPolicy{}
-			}),
-			expectedErrs: field.ErrorList{
-				field.Invalid(field.NewPath("spec").Child("schedulingPolicy"), "{`basic`, `gang`}", "exactly one of `basic`, `gang` is required, but multiple fields are set").MarkCoveredByDeclarative(),
-			},
-		},
-		"no policy set": {
-			podGroup: mkPodGroup(func(pg *scheduling.PodGroup) {
-				pg.Spec.SchedulingPolicy = scheduling.PodGroupSchedulingPolicy{}
-			}),
-			expectedErrs: field.ErrorList{
-				field.Invalid(field.NewPath("spec").Child("schedulingPolicy"), "", "must specify one of: `basic`, `gang`").MarkCoveredByDeclarative(),
 			},
 		},
 	}

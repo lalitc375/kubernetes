@@ -40,8 +40,8 @@ message GangSchedulingPolicy {
   // It must be a positive integer.
   //
   // +required
-  // +k8s:alpha(since:"1.36")=+k8s:required
-  // +k8s:alpha(since:"1.36")=+k8s:minimum=1
+  // +k8s:required
+  // +k8s:minimum=1
   optional int32 minCount = 1;
 }
 
@@ -85,18 +85,18 @@ message PodGroupSchedulingPolicy {
   // standard Kubernetes scheduling behavior.
   //
   // +optional
-  // +k8s:alpha(since:"1.36")=+k8s:optional
+  // +k8s:optional
   // +oneOf=PolicySelection
-  // +k8s:alpha(since:"1.36")=+k8s:unionMember
+  // +k8s:unionMember
   optional BasicSchedulingPolicy basic = 1;
 
   // Gang specifies that the pods in this group should be scheduled using
   // all-or-nothing semantics.
   //
   // +optional
-  // +k8s:alpha(since:"1.36")=+k8s:optional
+  // +k8s:optional
   // +oneOf=PolicySelection
-  // +k8s:alpha(since:"1.36")=+k8s:unionMember
+  // +k8s:unionMember
   optional GangSchedulingPolicy gang = 2;
 }
 
@@ -108,7 +108,7 @@ message PodGroupSpec {
   // if a need for standalone, template-less Pod groups arises.
   //
   // +optional
-  // +k8s:alpha(since:"1.36")=+k8s:required
+  // +k8s:required
   // +k8s:alpha(since:"1.36")=+k8s:immutable
   optional PodGroupTemplateReference podGroupTemplateRef = 1;
 
@@ -150,8 +150,8 @@ message PodGroupTemplate {
   // It must be a DNS label. This field is immutable.
   //
   // +required
-  // +k8s:alpha(since:"1.36")=+k8s:required
-  // +k8s:alpha(since:"1.36")=+k8s:format=k8s-short-name
+  // +k8s:required
+  // +k8s:format=k8s-short-name
   optional string name = 1;
 
   // SchedulingPolicy defines the scheduling policy for this PodGroupTemplate.
@@ -167,9 +167,9 @@ message PodGroupTemplateReference {
   // the PodGroup.
   //
   // +optional
-  // +k8s:alpha(since:"1.36")=+k8s:optional
+  // +k8s:optional
   // +oneOf=TemplateReference
-  // +k8s:alpha(since:"1.36")=+k8s:unionMember
+  // +k8s:unionMember
   optional WorkloadPodGroupTemplateReference workload = 1;
 }
 
@@ -181,24 +181,24 @@ message TypedLocalObjectReference {
   // It must be a DNS subdomain.
   //
   // +optional
-  // +k8s:alpha(since:"1.36")=+k8s:optional
-  // +k8s:alpha(since:"1.36")=+k8s:format=k8s-long-name
+  // +k8s:optional
+  // +k8s:format=k8s-long-name
   optional string apiGroup = 1;
 
   // Kind is the type of resource being referenced.
   // It must be a path segment name.
   //
   // +required
-  // +k8s:alpha(since:"1.36")=+k8s:required
-  // +k8s:alpha(since:"1.36")=+k8s:format=k8s-path-segment-name
+  // +k8s:required
+  // +k8s:format=k8s-path-segment-name
   optional string kind = 2;
 
   // Name is the name of resource being referenced.
   // It must be a path segment name.
   //
   // +required
-  // +k8s:alpha(since:"1.36")=+k8s:required
-  // +k8s:alpha(since:"1.36")=+k8s:format=k8s-path-segment-name
+  // +k8s:required
+  // +k8s:format=k8s-path-segment-name
   optional string name = 3;
 }
 
@@ -235,15 +235,15 @@ message WorkloadPodGroupTemplateReference {
   // WorkloadName defines the name of the Workload object.
   //
   // +required
-  // +k8s:alpha(since:"1.36")=+k8s:required
-  // +k8s:alpha(since:"1.36")=+k8s:format=k8s-short-name
+  // +k8s:required
+  // +k8s:format=k8s-short-name
   optional string workloadName = 1;
 
   // PodGroupTemplateName defines the PodGroupTemplate name within the Workload object.
   //
   // +required
-  // +k8s:alpha(since:"1.36")=+k8s:required
-  // +k8s:alpha(since:"1.36")=+k8s:format=k8s-short-name
+  // +k8s:required
+  // +k8s:format=k8s-short-name
   optional string podGroupTemplateName = 2;
 }
 
@@ -255,7 +255,7 @@ message WorkloadSpec {
   // When set, it cannot be changed.
   //
   // +optional
-  // +k8s:alpha(since:"1.36")=+k8s:optional
+  // +k8s:optional
   // +k8s:alpha(since:"1.36")=+k8s:update=NoModify
   optional TypedLocalObjectReference controllerRef = 1;
 
@@ -265,10 +265,10 @@ message WorkloadSpec {
   // +required
   // +listType=map
   // +listMapKey=name
-  // +k8s:alpha(since:"1.36")=+k8s:required
-  // +k8s:alpha(since:"1.36")=+k8s:listType=map
-  // +k8s:alpha(since:"1.36")=+k8s:listMapKey=name
-  // +k8s:alpha(since:"1.36")=+k8s:maxItems=8
+  // +k8s:required
+  // +k8s:listType=map
+  // +k8s:listMapKey=name
+  // +k8s:maxItems=8
   // +k8s:alpha(since:"1.36")=+k8s:immutable
   repeated PodGroupTemplate podGroupTemplates = 2;
 }

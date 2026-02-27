@@ -72,10 +72,6 @@ func testDeclarativeValidate(t *testing.T, apiVersion string) {
 			input:        mkValidPodGroup(unsetPodGroupTemplateRef()),
 			expectedErrs: field.ErrorList{field.Required(field.NewPath("spec", "podGroupTemplateRef"), "")},
 		},
-		"empty podGroupTemplateRef": {
-			input:        mkValidPodGroup(setEmptyPodGroupTemplateRef()),
-			expectedErrs: field.ErrorList{field.Invalid(field.NewPath("spec", "podGroupTemplateRef"), "", "must specify one of: `workload`").WithOrigin("union").MarkAlpha()},
-		},
 		"podGroupTemplateRef with empty template name": {
 			input:        mkValidPodGroup(setPodGroupTemplateRef("", "workload")),
 			expectedErrs: field.ErrorList{field.Required(field.NewPath("spec", "podGroupTemplateRef", "workload", "podGroupTemplateName"), "")},
@@ -91,14 +87,6 @@ func testDeclarativeValidate(t *testing.T, apiVersion string) {
 		"podGroupTemplateRef invalid workload name": {
 			input:        mkValidPodGroup(setPodGroupTemplateRef("template", "work/load")),
 			expectedErrs: field.ErrorList{field.Invalid(field.NewPath("spec", "podGroupTemplateRef", "workload", "workloadName"), nil, "").WithOrigin("format=k8s-short-name")},
-		},
-		"policy with neither basic nor gang": {
-			input:        mkValidPodGroup(clearPodGroupPolicy()),
-			expectedErrs: field.ErrorList{field.Invalid(field.NewPath("spec", "schedulingPolicy"), nil, "").WithOrigin("union").MarkAlpha()},
-		},
-		"policy with both basic and gang": {
-			input:        mkValidPodGroup(setBothPolicies()),
-			expectedErrs: field.ErrorList{field.Invalid(field.NewPath("spec", "schedulingPolicy"), nil, "").WithOrigin("union").MarkAlpha()},
 		},
 	}
 	for k, tc := range testCases {

@@ -51,7 +51,7 @@ var (
 	fieldImmutableError    = "field is immutable"
 	minCountError          = "must be greater than or equal to 1"
 	oneOfError             = "must specify one of: `basic`, `gang`"
-	multipleFieldsSetError = "exactly one of `basic`, `gang` is required"
+	multipleFieldsSetError = "must specify exactly one of: `basic`, `gang`"
 )
 
 func TestStrategy(t *testing.T) {

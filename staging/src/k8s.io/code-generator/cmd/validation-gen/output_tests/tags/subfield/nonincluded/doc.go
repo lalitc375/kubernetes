@@ -19,6 +19,7 @@ limitations under the License.
 
 // Package nonincluded contains test types for testing subfield field validation tags.
 // +k8s:validation-gen-nolint
+// +k8s:validation-gen-disable-report
 package nonincluded
 
 import (

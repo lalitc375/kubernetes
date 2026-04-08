@@ -21,6 +21,7 @@ limitations under the License.
 
 // This is a test package.
 // +k8s:validation-gen-nolint
+// +k8s:validation-gen-disable-report
 package withtypevalidations
 
 import "k8s.io/code-generator/cmd/validation-gen/testscheme"

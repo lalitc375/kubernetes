@@ -1,0 +1,21 @@
+NetworkPolicy:
+  spec.egress:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.egress[elem].to:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.egress[elem].to[elem].ipBlock:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.egress[elem].to[elem].ipBlock.cidr:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  spec.ingress:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.ingress[elem].from:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.ingress[elem].from[elem].ipBlock:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.ingress[elem].from[elem].ipBlock.cidr:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+Scale:
+  spec.replicas:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:minimum=0'

@@ -1,0 +1,61 @@
+DeviceTaintRule:
+  spec.taint.effect:
+  - k8s:required
+  - k8s:enum
+ResourcePoolStatusRequest:
+  spec:
+  - k8s:immutable
+  spec.driver:
+  - k8s:required
+  - k8s:format="k8s-long-name-caseless"
+  spec.limit:
+  - k8s:optional
+  - k8s:minimum=1
+  - k8s:maximum=1000
+  spec.poolName:
+  - k8s:optional
+  - k8s:format="k8s-resource-pool-name"
+  status:
+  - k8s:optional
+  status.conditions:
+  - k8s:optional
+  - k8s:listType="map"
+  - k8s:maxItems=10
+  - k8s:listMapKey="type"
+  status.poolCount:
+  - k8s:required
+  - k8s:minimum=0
+  status.pools:
+  - k8s:optional
+  - k8s:listType="atomic"
+  - k8s:maxItems=1000
+  status.pools[elem].allocatedDevices:
+  - k8s:optional
+  - k8s:minimum=0
+  status.pools[elem].availableDevices:
+  - k8s:optional
+  - k8s:minimum=0
+  status.pools[elem].driver:
+  - k8s:required
+  - k8s:format="k8s-long-name-caseless"
+  status.pools[elem].generation:
+  - k8s:required
+  - k8s:minimum=0
+  status.pools[elem].nodeName:
+  - k8s:format="k8s-long-name"
+  - k8s:optional
+  status.pools[elem].poolName:
+  - k8s:format="k8s-resource-pool-name"
+  - k8s:required
+  status.pools[elem].resourceSliceCount:
+  - k8s:optional
+  - k8s:minimum=1
+  status.pools[elem].totalDevices:
+  - k8s:optional
+  - k8s:minimum=0
+  status.pools[elem].unavailableDevices:
+  - k8s:optional
+  - k8s:minimum=0
+  status.pools[elem].validationError:
+  - k8s:optional
+  - k8s:maxBytes=256

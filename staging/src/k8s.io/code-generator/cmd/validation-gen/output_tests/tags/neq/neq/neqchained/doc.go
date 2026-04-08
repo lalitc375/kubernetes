@@ -19,6 +19,7 @@ limitations under the License.
 
 // This is a test package for complex neq compositions.
 // +k8s:validation-gen-nolint
+// +k8s:validation-gen-disable-report
 package neqchained
 
 import "k8s.io/code-generator/cmd/validation-gen/testscheme"

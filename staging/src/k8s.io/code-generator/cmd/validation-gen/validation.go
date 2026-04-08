@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/code-generator/cmd/validation-gen/util"
 	"k8s.io/code-generator/cmd/validation-gen/validators"
+	"k8s.io/gengo/v2/codetags"
 	"k8s.io/gengo/v2/generator"
 	"k8s.io/gengo/v2/namer"
 	"k8s.io/gengo/v2/parser/tags"
@@ -212,6 +213,7 @@ type childNode struct {
 	childType *types.Type // the real type of the child (may be a pointer)
 	node      *typeNode   // the node of the child's value type, or nil if it is in a foreign package
 
+	fieldTags        []codetags.Tag         // tags extracted from the field
 	fieldValidations validators.Validations // validations on the field
 
 	// These are not the same as fieldValidations, and are not considered in
@@ -235,6 +237,7 @@ type typeNode struct {
 	elem       *childNode   // populated when this type is a map or slice
 	underlying *childNode   // populated when this type is an alias
 
+	typeTags        []codetags.Tag         // tags extracted from the type
 	typeValidations validators.Validations // validations on the type
 
 	// These are not the same as typeValidations, and are not considered in
@@ -413,6 +416,7 @@ func (td *typeDiscoverer) discoverType(t *types.Type, fldPath *field.Path) (*typ
 				return nil, fmt.Errorf("field %s: validation for map of slices is not supported", fldPath)
 			}
 			klog.V(5).InfoS("found type-attached validations", "n", validations.Len(), "type", t)
+			thisNode.typeTags = append(thisNode.typeTags, extractedTags...)
 			thisNode.typeValidations.Add(validations)
 		}
 
@@ -651,6 +655,7 @@ func (td *typeDiscoverer) discoverStruct(thisNode *typeNode, fldPath *field.Path
 			if util.NonPointer(util.NativeType(childType)).Kind == types.Map && util.NonPointer(util.NativeType(childType)).Elem.Kind == types.Slice {
 				return fmt.Errorf("field %s: validation for map of slices is not supported", childPath)
 			}
+			child.fieldTags = append(child.fieldTags, tags...)
 			child.fieldValidations.Add(validations)
 			// TODO: re-visit erroring on specific cases where variable generation is not supported for field validations
 			// currently there are some cases where we want variable generation for field validations

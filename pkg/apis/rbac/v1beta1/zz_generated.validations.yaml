@@ -1,0 +1,24 @@
+ClusterRole:
+  rules:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  rules[elem].verbs:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+ClusterRoleBinding:
+  roleRef.name:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  subjects:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  subjects[elem].name:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+Role:
+  rules:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  rules[elem].verbs:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+RoleBinding:
+  roleRef.name:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  subjects:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  subjects[elem].name:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'

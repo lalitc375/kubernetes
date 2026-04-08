@@ -1,0 +1,147 @@
+PodGroup:
+  spec.disruptionMode:
+  - k8s:ifDisabled("WorkloadAwarePreemption")=+k8s:forbidden
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:optional
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:immutable
+  - k8s:enum
+  spec.podGroupTemplateRef:
+  - k8s:optional
+  - k8s:immutable
+  spec.podGroupTemplateRef.workload:
+  - k8s:optional
+  - k8s:unionMember
+  spec.podGroupTemplateRef.workload.podGroupTemplateName:
+  - k8s:required
+  - k8s:format="k8s-short-name"
+  spec.podGroupTemplateRef.workload.workloadName:
+  - k8s:required
+  - k8s:format="k8s-long-name"
+  spec.priority:
+  - k8s:ifDisabled("WorkloadAwarePreemption")=+k8s:forbidden
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:optional
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:immutable
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:maximum=1000000000
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:minimum=-2147483648
+  spec.priorityClassName:
+  - k8s:ifDisabled("WorkloadAwarePreemption")=+k8s:forbidden
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:optional
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:format="k8s-long-name"
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:immutable
+  spec.resourceClaims:
+  - k8s:optional
+  - k8s:listMapKey="name"
+  - k8s:immutable
+  - k8s:listType="map"
+  - k8s:maxItems=4
+  spec.resourceClaims[elem].name:
+  - k8s:required
+  - k8s:format="k8s-short-name"
+  spec.resourceClaims[elem].resourceClaimName:
+  - k8s:optional
+  - k8s:unionMember
+  - k8s:format="k8s-long-name"
+  spec.resourceClaims[elem].resourceClaimTemplateName:
+  - k8s:optional
+  - k8s:unionMember
+  - k8s:format="k8s-long-name"
+  spec.schedulingConstraints:
+  - k8s:ifDisabled("TopologyAwareWorkloadScheduling")=+k8s:forbidden
+  - k8s:ifEnabled("TopologyAwareWorkloadScheduling")=+k8s:optional
+  - k8s:ifEnabled("TopologyAwareWorkloadScheduling")=+k8s:immutable
+  spec.schedulingConstraints.topology:
+  - k8s:listType="atomic"
+  - k8s:optional
+  - k8s:maxItems=1
+  spec.schedulingConstraints.topology[elem].key:
+  - k8s:format="k8s-label-key"
+  - k8s:required
+  spec.schedulingPolicy:
+  - k8s:immutable
+  spec.schedulingPolicy.basic:
+  - k8s:unionMember
+  - k8s:optional
+  spec.schedulingPolicy.gang:
+  - k8s:optional
+  - k8s:unionMember
+  spec.schedulingPolicy.gang.minCount:
+  - k8s:required
+  - k8s:minimum=1
+  status.resourceClaimStatuses:
+  - k8s:maxItems=4
+  - k8s:optional
+  - k8s:listType="map"
+  - k8s:listMapKey="name"
+  status.resourceClaimStatuses[elem].resourceClaimName:
+  - k8s:format="k8s-long-name"
+  - k8s:optional
+Workload:
+  spec.controllerRef:
+  - k8s:optional
+  - k8s:immutable
+  spec.controllerRef.apiGroup:
+  - k8s:optional
+  - k8s:format="k8s-long-name"
+  spec.controllerRef.kind:
+  - k8s:format="k8s-path-segment-name"
+  - k8s:required
+  spec.controllerRef.name:
+  - k8s:required
+  - k8s:format="k8s-path-segment-name"
+  spec.podGroupTemplates:
+  - k8s:required
+  - k8s:listType="map"
+  - k8s:listMapKey="name"
+  - k8s:maxItems=8
+  - k8s:immutable
+  spec.podGroupTemplates[elem].disruptionMode:
+  - k8s:ifDisabled("WorkloadAwarePreemption")=+k8s:forbidden
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:optional
+  - k8s:enum
+  spec.podGroupTemplates[elem].name:
+  - k8s:required
+  - k8s:format="k8s-short-name"
+  spec.podGroupTemplates[elem].priority:
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:optional
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:maximum=1000000000
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:minimum=-2147483648
+  - k8s:ifDisabled("WorkloadAwarePreemption")=+k8s:forbidden
+  spec.podGroupTemplates[elem].priorityClassName:
+  - k8s:ifDisabled("WorkloadAwarePreemption")=+k8s:forbidden
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:optional
+  - k8s:ifEnabled("WorkloadAwarePreemption")=+k8s:format="k8s-long-name"
+  spec.podGroupTemplates[elem].resourceClaims:
+  - k8s:listType="map"
+  - k8s:listMapKey="name"
+  - k8s:maxItems=4
+  - k8s:immutable
+  - k8s:optional
+  spec.podGroupTemplates[elem].resourceClaims[elem].name:
+  - k8s:required
+  - k8s:format="k8s-short-name"
+  spec.podGroupTemplates[elem].resourceClaims[elem].resourceClaimName:
+  - k8s:optional
+  - k8s:unionMember
+  - k8s:format="k8s-long-name"
+  spec.podGroupTemplates[elem].resourceClaims[elem].resourceClaimTemplateName:
+  - k8s:optional
+  - k8s:unionMember
+  - k8s:format="k8s-long-name"
+  spec.podGroupTemplates[elem].schedulingConstraints:
+  - k8s:ifEnabled("TopologyAwareWorkloadScheduling")=+k8s:optional
+  - k8s:ifDisabled("TopologyAwareWorkloadScheduling")=+k8s:forbidden
+  spec.podGroupTemplates[elem].schedulingConstraints.topology:
+  - k8s:listType="atomic"
+  - k8s:optional
+  - k8s:maxItems=1
+  spec.podGroupTemplates[elem].schedulingConstraints.topology[elem].key:
+  - k8s:format="k8s-label-key"
+  - k8s:required
+  spec.podGroupTemplates[elem].schedulingPolicy.basic:
+  - k8s:unionMember
+  - k8s:optional
+  spec.podGroupTemplates[elem].schedulingPolicy.gang:
+  - k8s:optional
+  - k8s:unionMember
+  spec.podGroupTemplates[elem].schedulingPolicy.gang.minCount:
+  - k8s:required
+  - k8s:minimum=1

@@ -21,6 +21,7 @@ limitations under the License.
 // validations, it is outside of the args used when generating output_tests,
 // and so the generated could should NOT descend into these.
 // +k8s:validation-gen-nolint
+// +k8s:validation-gen-disable-report
 package other
 
 // +k8s:validateFalse="you should not see this outside of this pkg"

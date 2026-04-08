@@ -1,0 +1,3 @@
+CronJob:
+  spec.schedule:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'

@@ -1,0 +1,30 @@
+networking.k8s.io/v1, Kind=IPAddress:
+  fields:
+    spec.parentRef:
+    - count: 2
+      type: FieldValueRequired
+    - count: 3
+      origin: immutable
+      type: FieldValueInvalid
+    spec.parentRef.name:
+    - count: 1
+      type: FieldValueRequired
+    spec.parentRef.resource:
+    - count: 1
+      type: FieldValueRequired
+  invocations: 8
+networking.k8s.io/v1beta1, Kind=IPAddress:
+  fields:
+    spec.parentRef:
+    - count: 2
+      type: FieldValueRequired
+    - count: 3
+      origin: immutable
+      type: FieldValueInvalid
+    spec.parentRef.name:
+    - count: 1
+      type: FieldValueRequired
+    spec.parentRef.resource:
+    - count: 1
+      type: FieldValueRequired
+  invocations: 8

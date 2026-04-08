@@ -19,6 +19,8 @@ package main
 import (
 	"cmp"
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
@@ -31,6 +33,7 @@ import (
 	"k8s.io/gengo/v2/namer"
 	"k8s.io/gengo/v2/types"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/yaml"
 )
 
 // These are the comment tags that carry parameters for validation generation.
@@ -407,6 +410,12 @@ func GetTargets(context *generator.Context, args *Args) []generator.Target {
 			}
 		}
 
+		if _, skipReport := extracted["k8s:validation-gen-disable-report"]; !skipReport {
+			if err := emitDeclarativeValidationsReport(pkg.Dir, args.OutputFile, rootTypes, td); err != nil {
+				klog.Fatalf("failed to emit declarative validations report: %v", err)
+			}
+		}
+
 		targets = append(targets,
 			&generator.SimpleTarget{
 				PkgName:       pkg.Name,
@@ -460,4 +469,91 @@ func isTypeWith(t *types.Type, typesWith []string) bool {
 		}
 	}
 	return false
+}
+
+func emitDeclarativeValidationsReport(dir string, filename string, rootTypes []*types.Type, td *typeDiscoverer) error {
+	report := make(map[string]map[string][]string) // TypeName -> FieldPath -> []Tags
+
+	for _, t := range rootTypes {
+		typeName := t.Name.Name
+
+		var walkNode func(node *typeNode, path string)
+		var walkChild func(child *childNode, path string)
+
+		seen := make(map[*typeNode]bool)
+
+		walkNode = func(node *typeNode, path string) {
+			if node == nil || seen[node] {
+				return
+			}
+			seen[node] = true
+
+			if len(node.typeTags) > 0 {
+				if report[typeName] == nil {
+					report[typeName] = make(map[string][]string)
+				}
+				for _, tag := range node.typeTags {
+					report[typeName][path] = append(report[typeName][path], tag.String())
+				}
+			}
+
+			for _, child := range node.fields {
+				childPath := path
+				nameToUse := child.jsonName
+				if nameToUse == "" {
+					nameToUse = child.name
+				}
+				if path == "" {
+					childPath = nameToUse
+				} else {
+					childPath = path + "." + nameToUse
+				}
+				walkChild(child, childPath)
+			}
+			if node.key != nil {
+				walkChild(node.key, path+"[key]")
+			}
+			if node.elem != nil {
+				walkChild(node.elem, path+"[elem]")
+			}
+			if node.underlying != nil {
+				walkChild(node.underlying, path)
+			}
+
+			seen[node] = false
+		}
+
+		walkChild = func(child *childNode, path string) {
+			if child == nil {
+				return
+			}
+			if len(child.fieldTags) > 0 {
+				if report[typeName] == nil {
+					report[typeName] = make(map[string][]string)
+				}
+				for _, tag := range child.fieldTags {
+					report[typeName][path] = append(report[typeName][path], tag.String())
+				}
+			}
+			if child.node != nil {
+				walkNode(child.node, path)
+			}
+		}
+
+		if node := td.typeNodes[t]; node != nil {
+			walkNode(node, "")
+		}
+	}
+
+	if len(report) == 0 {
+		return nil
+	}
+
+	yamlBytes, err := yaml.Marshal(report)
+	if err != nil {
+		return err
+	}
+
+	outPath := filepath.Join(dir, strings.TrimSuffix(filename, ".go")+".yaml")
+	return os.WriteFile(outPath, yamlBytes, 0644)
 }

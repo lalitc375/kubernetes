@@ -1,0 +1,10 @@
+EndpointSlice:
+  addressType:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:immutable'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  endpoints:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  endpoints[elem].addresses:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=100'

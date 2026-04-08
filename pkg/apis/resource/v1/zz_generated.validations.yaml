@@ -1,0 +1,321 @@
+DeviceClass:
+  metadata:
+  - 'k8s:alpha(since: "1.36")=+k8s:subfield("name")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:subfield("name")=+k8s:format="k8s-long-name"'
+  spec.config:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  spec.config[elem].DeviceConfiguration.opaque:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.config[elem].DeviceConfiguration.opaque.driver:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-long-name-caseless"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxLength=63'
+  spec.extendedResourceName:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-extended-resource-name"'
+  spec.selectors:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+ResourceClaim:
+  spec:
+  - 'k8s:alpha(since: "1.36")=+k8s:immutable'
+  spec.devices.config:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  spec.devices.config[elem].DeviceConfiguration.opaque:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.devices.config[elem].DeviceConfiguration.opaque.driver:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-long-name-caseless"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxLength=63'
+  spec.devices.config[elem].requests:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unique="set"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  - k8s:listType="atomic"
+  spec.devices.constraints:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  spec.devices.constraints[elem].matchAttribute:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-resource-fully-qualified-name"'
+  spec.devices.constraints[elem].requests:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unique="set"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  - k8s:listType="atomic"
+  spec.devices.requests:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unique="map"'
+  - 'k8s:alpha(since: "1.36")=+k8s:listMapKey="name"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  - k8s:listType="atomic"
+  spec.devices.requests[elem].exactly:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.devices.requests[elem].exactly.allocationMode:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  spec.devices.requests[elem].exactly.selectors:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  spec.devices.requests[elem].exactly.tolerations:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.devices.requests[elem].exactly.tolerations[elem].effect:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  spec.devices.requests[elem].exactly.tolerations[elem].key:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-label-key"'
+  spec.devices.requests[elem].exactly.tolerations[elem].operator:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  spec.devices.requests[elem].firstAvailable:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unique="map"'
+  - 'k8s:alpha(since: "1.36")=+k8s:listMapKey="name"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=8'
+  - k8s:listType="atomic"
+  spec.devices.requests[elem].firstAvailable[elem].allocationMode:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  spec.devices.requests[elem].firstAvailable[elem].deviceClassName:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-long-name"'
+  spec.devices.requests[elem].firstAvailable[elem].selectors:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  spec.devices.requests[elem].firstAvailable[elem].tolerations:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.devices.requests[elem].firstAvailable[elem].tolerations[elem].effect:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  spec.devices.requests[elem].firstAvailable[elem].tolerations[elem].key:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-label-key"'
+  spec.devices.requests[elem].firstAvailable[elem].tolerations[elem].operator:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  status.allocation:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:update="NoModify"'
+  status.allocation.devices.config:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=64'
+  status.allocation.devices.config[elem].DeviceConfiguration.opaque:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  status.allocation.devices.config[elem].DeviceConfiguration.opaque.driver:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-long-name-caseless"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxLength=63'
+  status.allocation.devices.config[elem].requests:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unique="set"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  - k8s:listType="atomic"
+  status.allocation.devices.config[elem].source:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  status.allocation.devices.results:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  status.allocation.devices.results[elem].bindingConditions:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=4'
+  status.allocation.devices.results[elem].bindingFailureConditions:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=4'
+  status.allocation.devices.results[elem].driver:
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-long-name-caseless"'
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxLength=63'
+  status.allocation.devices.results[elem].pool:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-resource-pool-name"'
+  status.allocation.devices.results[elem].shareID:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-uuid"'
+  status.allocation.devices.results[elem].tolerations:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  status.allocation.devices.results[elem].tolerations[elem].effect:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  status.allocation.devices.results[elem].tolerations[elem].key:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-label-key"'
+  status.allocation.devices.results[elem].tolerations[elem].operator:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  status.devices:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:listType="map"'
+  - 'k8s:alpha(since: "1.36")=+k8s:listMapKey="driver"'
+  - 'k8s:alpha(since: "1.36")=+k8s:listMapKey="device"'
+  - 'k8s:alpha(since: "1.36")=+k8s:listMapKey="pool"'
+  - 'k8s:alpha(since: "1.36")=+k8s:listMapKey="shareID"'
+  status.devices[elem].networkData:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  status.devices[elem].networkData.hardwareAddress:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxBytes=128'
+  status.devices[elem].networkData.interfaceName:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxBytes=256'
+  status.devices[elem].networkData.ips:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unique="set"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=16'
+  - k8s:listType="atomic"
+  status.devices[elem].shareID:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-uuid"'
+  status.reservedFor:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:listType="map"'
+  - 'k8s:alpha(since: "1.36")=+k8s:listMapKey="uid"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=256'
+ResourceClaimTemplate:
+  spec.spec.devices.config:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  spec.spec.devices.config[elem].DeviceConfiguration.opaque:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.spec.devices.config[elem].DeviceConfiguration.opaque.driver:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-long-name-caseless"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxLength=63'
+  spec.spec.devices.config[elem].requests:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unique="set"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  - k8s:listType="atomic"
+  spec.spec.devices.constraints:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  spec.spec.devices.constraints[elem].matchAttribute:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-resource-fully-qualified-name"'
+  spec.spec.devices.constraints[elem].requests:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unique="set"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  - k8s:listType="atomic"
+  spec.spec.devices.requests:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unique="map"'
+  - 'k8s:alpha(since: "1.36")=+k8s:listMapKey="name"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  - k8s:listType="atomic"
+  spec.spec.devices.requests[elem].exactly:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.spec.devices.requests[elem].exactly.allocationMode:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  spec.spec.devices.requests[elem].exactly.selectors:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  spec.spec.devices.requests[elem].exactly.tolerations:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.spec.devices.requests[elem].exactly.tolerations[elem].effect:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  spec.spec.devices.requests[elem].exactly.tolerations[elem].key:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-label-key"'
+  spec.spec.devices.requests[elem].exactly.tolerations[elem].operator:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  spec.spec.devices.requests[elem].firstAvailable:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unique="map"'
+  - 'k8s:alpha(since: "1.36")=+k8s:listMapKey="name"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=8'
+  - k8s:listType="atomic"
+  spec.spec.devices.requests[elem].firstAvailable[elem].allocationMode:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  spec.spec.devices.requests[elem].firstAvailable[elem].deviceClassName:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-long-name"'
+  spec.spec.devices.requests[elem].firstAvailable[elem].selectors:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=32'
+  spec.spec.devices.requests[elem].firstAvailable[elem].tolerations:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.spec.devices.requests[elem].firstAvailable[elem].tolerations[elem].effect:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  spec.spec.devices.requests[elem].firstAvailable[elem].tolerations[elem].key:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-label-key"'
+  spec.spec.devices.requests[elem].firstAvailable[elem].tolerations[elem].operator:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+ResourceSlice:
+  spec.devices:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.devices[elem].attributes:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.devices[elem].attributes[elem].bool:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unionMember'
+  spec.devices[elem].attributes[elem].bools:
+  - k8s:listType="atomic"
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unionMember'
+  spec.devices[elem].attributes[elem].int:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unionMember'
+  spec.devices[elem].attributes[elem].ints:
+  - k8s:listType="atomic"
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unionMember'
+  spec.devices[elem].attributes[elem].string:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unionMember'
+  spec.devices[elem].attributes[elem].strings:
+  - k8s:listType="atomic"
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unionMember'
+  spec.devices[elem].attributes[elem].version:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unionMember'
+  spec.devices[elem].attributes[elem].versions:
+  - k8s:listType="atomic"
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unionMember'
+  spec.devices[elem].bindingConditions:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=4'
+  spec.devices[elem].bindingFailureConditions:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=4'
+  spec.devices[elem].consumesCounters:
+  - k8s:listType="atomic"
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unique="map"'
+  - 'k8s:alpha(since: "1.36")=+k8s:listMapKey="counterSet"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=2'
+  spec.devices[elem].consumesCounters[elem].counterSet:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-short-name"'
+  spec.devices[elem].consumesCounters[elem].counters:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:eachKey=+k8s:format="k8s-short-name"'
+  spec.devices[elem].taints:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.devices[elem].taints[elem].effect:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:enum'
+  spec.sharedCounters:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:unique="map"'
+  - 'k8s:alpha(since: "1.36")=+k8s:listMapKey="name"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxItems=8'
+  - k8s:listType="atomic"
+  spec.sharedCounters[elem].counters:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:eachKey=+k8s:format="k8s-short-name"'
+  spec.sharedCounters[elem].name:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-short-name"'

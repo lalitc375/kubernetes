@@ -1,0 +1,8 @@
+HorizontalPodAutoscaler:
+  spec.maxReplicas:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:minimum=1'
+  spec.minReplicas:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  - 'k8s:alpha(since: "1.36")=+k8s:ifEnabled("HPAScaleToZero")=+k8s:minimum=0'
+  - 'k8s:alpha(since: "1.36")=+k8s:ifDisabled("HPAScaleToZero")=+k8s:minimum=1'

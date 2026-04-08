@@ -1,0 +1,5 @@
+RuntimeClass:
+  spec.runtimeHandler:
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-short-name"'
+  - 'k8s:alpha(since: "1.36")=+k8s:immutable'
+  - 'k8s:alpha(since: "1.36")=+k8s:required'

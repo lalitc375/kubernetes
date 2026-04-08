@@ -1,0 +1,15 @@
+IPAddress:
+  spec.parentRef:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:immutable'
+  spec.parentRef.name:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  spec.parentRef.resource:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+IngressClass:
+  spec.parameters:
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  spec.parameters.kind:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  spec.parameters.name:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'

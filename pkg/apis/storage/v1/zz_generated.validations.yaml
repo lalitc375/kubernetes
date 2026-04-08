@@ -1,0 +1,20 @@
+StorageClass:
+  parameters:
+  - 'k8s:alpha(since: "1.36")=+k8s:immutable'
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  provisioner:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:immutable'
+  reclaimPolicy:
+  - 'k8s:alpha(since: "1.36")=+k8s:immutable'
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+  volumeBindingMode:
+  - 'k8s:alpha(since: "1.36")=+k8s:immutable'
+  - 'k8s:alpha(since: "1.36")=+k8s:optional'
+VolumeAttachment:
+  spec:
+  - 'k8s:alpha(since: "1.36")=+k8s:immutable'
+  spec.attacher:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  - 'k8s:alpha(since: "1.36")=+k8s:format="k8s-long-name-caseless"'
+  - 'k8s:alpha(since: "1.36")=+k8s:maxLength=63'

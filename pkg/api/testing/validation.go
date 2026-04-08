@@ -19,8 +19,12 @@ package testing
 import (
 	"bytes"
 	"context"
+	"os"
+	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
+	"sync"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,6 +32,7 @@ import (
 	runtimetest "k8s.io/apimachinery/pkg/runtime/testing"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apimachinery/pkg/util/version"
+	"k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/features"
 	"k8s.io/apiserver/pkg/registry/rest"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
@@ -37,6 +42,7 @@ import (
 	"k8s.io/component-base/metrics/testutil"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"sigs.k8s.io/randfill"
+	"sigs.k8s.io/yaml"
 )
 
 // ValidateFunc is a function that runs validation.
@@ -293,7 +299,7 @@ func VerifyValidationEquivalence(t *testing.T, ctx context.Context, obj runtime.
 		testcfg(opts)
 	}
 
-	verifyValidationEquivalence(t, expectedErrs, func(c context.Context) field.ErrorList {
+	verifyValidationEquivalence(t, obj, expectedErrs, func(c context.Context) field.ErrorList {
 		return validateFn(c, obj)
 	}, ctx, opts)
 	VerifyVersionedValidationEquivalence(t, obj, nil, testConfigs...)
@@ -324,14 +330,14 @@ func VerifyUpdateValidationEquivalence(t *testing.T, ctx context.Context, obj, o
 		testcfg(opts)
 	}
 
-	verifyValidationEquivalence(t, expectedErrs, func(c context.Context) field.ErrorList {
+	verifyValidationEquivalence(t, obj, expectedErrs, func(c context.Context) field.ErrorList {
 		return validateUpdateFn(c, obj, old)
 	}, ctx, opts)
 	VerifyVersionedValidationEquivalence(t, obj, old, testConfigs...)
 }
 
 // verifyValidationEquivalence is a generic helper that verifies validation equivalence with and without declarative validation.
-func verifyValidationEquivalence(t *testing.T, expectedErrs field.ErrorList, runValidations func(context.Context) field.ErrorList, ctx context.Context, opt *validationOption) {
+func verifyValidationEquivalence(t *testing.T, obj runtime.Object, expectedErrs field.ErrorList, runValidations func(context.Context) field.ErrorList, ctx context.Context, opt *validationOption) {
 	t.Helper()
 	var declarativeBetaEnabledErrs field.ErrorList
 	var declarativeBetaDisabledErrs field.ErrorList
@@ -431,6 +437,43 @@ func verifyValidationEquivalence(t *testing.T, expectedErrs field.ErrorList, run
 			t.Errorf("expected no errors, but got: %v", allDeclarativeErrs)
 		}
 
+		kindName := "Unknown"
+		var reqGroup, reqVersion string
+		if reqInfo, ok := request.RequestInfoFrom(ctx); ok {
+			reqGroup = reqInfo.APIGroup
+			reqVersion = reqInfo.APIVersion
+		}
+
+		if obj != nil {
+			gvks, _, err := legacyscheme.Scheme.ObjectKinds(obj)
+			if err == nil && len(gvks) > 0 {
+				gvk := gvks[0]
+				if reqGroup != "" {
+					gvk.Group = reqGroup
+				}
+				if reqVersion != "" {
+					gvk.Version = reqVersion
+				}
+				kindName = gvk.String()
+			} else {
+				typ := reflect.TypeOf(obj)
+				var kind string
+				if typ.Kind() == reflect.Ptr {
+					kind = typ.Elem().Name()
+				} else {
+					kind = typ.Name()
+				}
+				if reqGroup != "" || reqVersion != "" {
+					kindName = schema.GroupVersionKind{Group: reqGroup, Version: reqVersion, Kind: kind}.String()
+				} else {
+					kindName = kind
+				}
+			}
+		} else if reqGroup != "" || reqVersion != "" {
+			kindName = schema.GroupVersionKind{Group: reqGroup, Version: reqVersion, Kind: "Unknown"}.String()
+		}
+
+		updateGlobalReport(kindName, allDeclarativeErrs)
 		// Ensure no mismatches were logged/metrics incremented
 		testutil.AssertVectorCount(t, "apiserver_validation_declarative_validation_mismatch_total", nil, 0)
 	})
@@ -477,4 +520,83 @@ func deDuplicateErrors(errs field.ErrorList, matcher field.ErrorMatcher) field.E
 		}
 	}
 	return deduped
+}
+
+var reportMutex sync.Mutex
+
+type ValidationReportEntry struct {
+	Type   string `json:"type" yaml:"type"`
+	Origin string `json:"origin,omitempty" yaml:"origin,omitempty"`
+	Count  int    `json:"count" yaml:"count"`
+}
+
+type KindReport struct {
+	Invocations int                                `json:"invocations" yaml:"invocations"`
+	Fields      map[string][]ValidationReportEntry `json:"fields,omitempty" yaml:"fields,omitempty"`
+}
+
+func updateGlobalReport(kindName string, errs field.ErrorList) {
+	reportMutex.Lock()
+	defer reportMutex.Unlock()
+
+	currentWd, _ := os.Getwd()
+	pkgName := filepath.Base(currentWd)
+	dir := currentWd
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			break
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			dir = "."
+			break
+		}
+		dir = parent
+	}
+	reportPath := filepath.Join(dir, pkgName+".yaml")
+
+	existingReport := make(map[string]*KindReport)
+	data, err := os.ReadFile(reportPath)
+	if err == nil {
+		_ = yaml.Unmarshal(data, &existingReport)
+	}
+
+	kr, ok := existingReport[kindName]
+	if !ok {
+		kr = &KindReport{Fields: make(map[string][]ValidationReportEntry)}
+		existingReport[kindName] = kr
+	}
+
+	kr.Invocations++
+
+	for _, e := range errs {
+		fieldPath := e.Field
+		errType := string(e.Type)
+		errOrigin := string(e.Origin)
+
+		if kr.Fields == nil {
+			kr.Fields = make(map[string][]ValidationReportEntry)
+		}
+
+		found := false
+		for i, o := range kr.Fields[fieldPath] {
+			if o.Type == errType && o.Origin == errOrigin {
+				kr.Fields[fieldPath][i].Count++
+				found = true
+				break
+			}
+		}
+		if !found {
+			kr.Fields[fieldPath] = append(kr.Fields[fieldPath], ValidationReportEntry{
+				Type:   errType,
+				Origin: errOrigin,
+				Count:  1,
+			})
+		}
+	}
+
+	yamlData, marshalErr := yaml.Marshal(existingReport)
+	if marshalErr == nil {
+		_ = os.WriteFile(reportPath, yamlData, 0644)
+	}
 }

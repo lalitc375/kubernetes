@@ -1,0 +1,5 @@
+ValidatingAdmissionPolicyBinding:
+  spec.policyName:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'
+  spec.validationActions:
+  - 'k8s:alpha(since: "1.36")=+k8s:required'

@@ -19,6 +19,7 @@ limitations under the License.
 
 // Package subfield contains test types for testing subfield field validation tags.
 // +k8s:validation-gen-nolint
+// +k8s:validation-gen-disable-report
 package shallow
 
 import "k8s.io/code-generator/cmd/validation-gen/testscheme"

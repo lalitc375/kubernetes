@@ -1,0 +1,101 @@
+scheduling.k8s.io/v1alpha2, Kind=Workload:
+  fields:
+    spec.controllerRef:
+    - count: 3
+      origin: immutable
+      type: FieldValueInvalid
+    spec.controllerRef.apiGroup:
+    - count: 2
+      origin: format=k8s-long-name
+      type: FieldValueInvalid
+    spec.controllerRef.kind:
+    - count: 1
+      type: FieldValueRequired
+    - count: 2
+      origin: format=k8s-path-segment-name
+      type: FieldValueInvalid
+    spec.controllerRef.name:
+    - count: 2
+      origin: format=k8s-path-segment-name
+      type: FieldValueInvalid
+    - count: 1
+      type: FieldValueRequired
+    spec.podGroupTemplates:
+    - count: 2
+      origin: maxItems
+      type: FieldValueTooMany
+    - count: 2
+      type: FieldValueRequired
+    - count: 27
+      origin: immutable
+      type: FieldValueInvalid
+    spec.podGroupTemplates[0].disruptionMode:
+    - count: 3
+      type: FieldValueForbidden
+    - count: 1
+      type: FieldValueNotSupported
+    spec.podGroupTemplates[0].name:
+    - count: 1
+      origin: format=k8s-short-name
+      type: FieldValueInvalid
+    - count: 1
+      type: FieldValueRequired
+    spec.podGroupTemplates[0].priority:
+    - count: 1
+      origin: maximum
+      type: FieldValueInvalid
+    - count: 3
+      type: FieldValueForbidden
+    spec.podGroupTemplates[0].priorityClassName:
+    - count: 2
+      type: FieldValueForbidden
+    - count: 1
+      origin: format=k8s-long-name
+      type: FieldValueInvalid
+    spec.podGroupTemplates[0].resourceClaims:
+    - count: 1
+      origin: maxItems
+      type: FieldValueTooMany
+    spec.podGroupTemplates[0].resourceClaims[0]:
+    - count: 2
+      origin: union
+      type: FieldValueInvalid
+    spec.podGroupTemplates[0].resourceClaims[0].name:
+    - count: 2
+      origin: format=k8s-short-name
+      type: FieldValueInvalid
+    spec.podGroupTemplates[0].resourceClaims[0].resourceClaimName:
+    - count: 1
+      origin: format=k8s-long-name
+      type: FieldValueInvalid
+    spec.podGroupTemplates[0].resourceClaims[0].resourceClaimTemplateName:
+    - count: 1
+      origin: format=k8s-long-name
+      type: FieldValueInvalid
+    spec.podGroupTemplates[0].resourceClaims[1]:
+    - count: 1
+      type: FieldValueDuplicate
+    spec.podGroupTemplates[0].schedulingConstraints.topology:
+    - count: 1
+      origin: maxItems
+      type: FieldValueTooMany
+    spec.podGroupTemplates[0].schedulingConstraints.topology[0].key:
+    - count: 1
+      type: FieldValueRequired
+    - count: 4
+      origin: format=k8s-label-key
+      type: FieldValueInvalid
+    spec.podGroupTemplates[0].schedulingPolicy:
+    - count: 2
+      origin: union
+      type: FieldValueInvalid
+    spec.podGroupTemplates[0].schedulingPolicy.gang.minCount:
+    - count: 1
+      type: FieldValueRequired
+    - count: 1
+      origin: minimum
+      type: FieldValueInvalid
+    spec.podGroupTemplates[1]:
+    - count: 1
+      type: FieldValueDuplicate
+  invocations: 92

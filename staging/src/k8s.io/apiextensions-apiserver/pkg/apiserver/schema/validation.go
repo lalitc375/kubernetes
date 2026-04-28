@@ -147,6 +147,22 @@ func validateStructuralInvariants(s *Structural, lvl level, fldPath *field.Path,
 
 	checkMetadata := (lvl == rootLevel) || s.XEmbeddedResource
 
+	if len(s.XEmbeddedType) > 0 {
+		if s.Type != "object" {
+			if len(s.Type) == 0 {
+				allErrs = append(allErrs, field.Required(fldPath.Child("type"), "must be object if x-kubernetes-embedded-type is set"))
+			} else {
+				allErrs = append(allErrs, field.Invalid(fldPath.Child("type"), s.Type, "must be object if x-kubernetes-embedded-type is set"))
+			}
+		}
+		if s.XEmbeddedResource {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("x-kubernetes-embedded-type"), "must not be used if x-kubernetes-embedded-resource is also set"))
+		}
+		if s.XEmbeddedType != "core/v1.PodTemplateSpec" {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("x-kubernetes-embedded-type"), s.XEmbeddedType, "must be 'core/v1.PodTemplateSpec'"))
+		}
+	}
+
 	if s.XEmbeddedResource && s.Type != "object" {
 		if len(s.Type) == 0 {
 			allErrs = append(allErrs, field.Required(fldPath.Child("type"), "must be object if x-kubernetes-embedded-resource is true"))

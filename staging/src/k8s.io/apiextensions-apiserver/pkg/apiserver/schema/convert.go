@@ -279,6 +279,10 @@ func newExtensions(s *apiextensions.JSONSchemaProps) (*Extensions, error) {
 		XMapType:          s.XMapType,
 	}
 
+	if s.XEmbeddedType != nil {
+		ret.XEmbeddedType = *s.XEmbeddedType
+	}
+
 	if s.XPreserveUnknownFields != nil {
 		if !*s.XPreserveUnknownFields {
 			return nil, fmt.Errorf("internal error: 'x-kubernetes-preserve-unknown-fields' must be true or undefined")

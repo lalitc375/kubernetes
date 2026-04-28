@@ -139,6 +139,10 @@ type Extensions struct {
 	//      Atomic maps will be entirely replaced when updated.
 	// +optional
 	XMapType *string
+
+	// x-kubernetes-embedded-type defines that the value is an
+	// embedded Kubernetes type.
+	XEmbeddedType string
 }
 
 // +k8s:deepcopy-gen=true

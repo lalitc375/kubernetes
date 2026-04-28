@@ -2335,6 +2335,13 @@ func schema_pkg_apis_apiextensions_v1_JSONSchemaProps(ref common.ReferenceCallba
 							},
 						},
 					},
+					"x-kubernetes-embedded-type": {
+						SchemaProps: spec.SchemaProps{
+							Description: "x-kubernetes-embedded-type defines that the value is an embedded Kubernetes type.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -3902,6 +3909,13 @@ func schema_pkg_apis_apiextensions_v1beta1_JSONSchemaProps(ref common.ReferenceC
 									},
 								},
 							},
+						},
+					},
+					"x-kubernetes-embedded-type": {
+						SchemaProps: spec.SchemaProps{
+							Description: "x-kubernetes-embedded-type defines that the value is an embedded Kubernetes type.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},

@@ -651,6 +651,11 @@ message JSONSchemaProps {
   // +listType=map
   // +listMapKey=rule
   repeated ValidationRule xKubernetesValidations = 44;
+
+  // x-kubernetes-embedded-type defines that the value is an
+  // embedded Kubernetes type.
+  // +optional
+  optional string xKubernetesEmbeddedType = 45;
 }
 
 // JSONSchemaPropsOrArray represents a value that can either be a JSONSchemaProps

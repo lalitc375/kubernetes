@@ -149,6 +149,10 @@ type JSONSchemaProps struct {
 	// +listType=map
 	// +listMapKey=rule
 	XValidations ValidationRules
+
+	// x-kubernetes-embedded-type defines that the value is an
+	// embedded Kubernetes type. The type must be object.
+	XEmbeddedType *string
 }
 
 // ValidationRules describes a list of validation rules written in the CEL expression language.

@@ -160,6 +160,9 @@ type JSONSchemaPropsApplyConfiguration struct {
 	XMapType *string `json:"x-kubernetes-map-type,omitempty"`
 	// x-kubernetes-validations describes a list of validation rules written in the CEL expression language.
 	XValidations *apiextensionsv1beta1.ValidationRules `json:"x-kubernetes-validations,omitempty"`
+	// x-kubernetes-embedded-type defines that the value is an
+	// embedded Kubernetes type.
+	XEmbeddedType *string `json:"x-kubernetes-embedded-type,omitempty"`
 }
 
 // JSONSchemaPropsApplyConfiguration constructs a declarative configuration of the JSONSchemaProps type for use with
@@ -550,5 +553,13 @@ func (b *JSONSchemaPropsApplyConfiguration) WithXMapType(value string) *JSONSche
 // If called multiple times, the XValidations field is set to the value of the last call.
 func (b *JSONSchemaPropsApplyConfiguration) WithXValidations(value apiextensionsv1beta1.ValidationRules) *JSONSchemaPropsApplyConfiguration {
 	b.XValidations = &value
+	return b
+}
+
+// WithXEmbeddedType sets the XEmbeddedType field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the XEmbeddedType field is set to the value of the last call.
+func (b *JSONSchemaPropsApplyConfiguration) WithXEmbeddedType(value string) *JSONSchemaPropsApplyConfiguration {
+	b.XEmbeddedType = &value
 	return b
 }

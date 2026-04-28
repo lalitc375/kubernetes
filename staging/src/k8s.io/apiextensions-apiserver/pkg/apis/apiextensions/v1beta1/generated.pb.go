@@ -1085,6 +1085,15 @@ func (m *JSONSchemaProps) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.XEmbeddedType != nil {
+		i -= len(*m.XEmbeddedType)
+		copy(dAtA[i:], *m.XEmbeddedType)
+		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.XEmbeddedType)))
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0xea
+	}
 	if len(m.XValidations) > 0 {
 		for iNdEx := len(m.XValidations) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -2470,6 +2479,10 @@ func (m *JSONSchemaProps) Size() (n int) {
 			n += 2 + l + sovGenerated(uint64(l))
 		}
 	}
+	if m.XEmbeddedType != nil {
+		l = len(*m.XEmbeddedType)
+		n += 2 + l + sovGenerated(uint64(l))
+	}
 	return n
 }
 
@@ -2995,6 +3008,7 @@ func (this *JSONSchemaProps) String() string {
 		`XListType:` + valueToStringGenerated(this.XListType) + `,`,
 		`XMapType:` + valueToStringGenerated(this.XMapType) + `,`,
 		`XValidations:` + repeatedStringForXValidations + `,`,
+		`XEmbeddedType:` + valueToStringGenerated(this.XEmbeddedType) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -7777,6 +7791,39 @@ func (m *JSONSchemaProps) Unmarshal(dAtA []byte) error {
 			if err := m.XValidations[len(m.XValidations)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 45:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field XEmbeddedType", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(dAtA[iNdEx:postIndex])
+			m.XEmbeddedType = &s
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

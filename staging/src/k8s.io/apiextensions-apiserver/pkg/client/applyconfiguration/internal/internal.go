@@ -436,6 +436,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: x-kubernetes-embedded-resource
       type:
         scalar: boolean
+    - name: x-kubernetes-embedded-type
+      type:
+        scalar: string
     - name: x-kubernetes-int-or-string
       type:
         scalar: boolean
@@ -986,6 +989,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: x-kubernetes-embedded-resource
       type:
         scalar: boolean
+    - name: x-kubernetes-embedded-type
+      type:
+        scalar: string
     - name: x-kubernetes-int-or-string
       type:
         scalar: boolean

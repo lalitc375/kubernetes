@@ -965,6 +965,7 @@ func autoConvert_v1beta1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(in *JS
 	out.XListType = (*string)(unsafe.Pointer(in.XListType))
 	out.XMapType = (*string)(unsafe.Pointer(in.XMapType))
 	out.XValidations = *(*apiextensions.ValidationRules)(unsafe.Pointer(&in.XValidations))
+	out.XEmbeddedType = (*string)(unsafe.Pointer(in.XEmbeddedType))
 	return nil
 }
 
@@ -1154,6 +1155,7 @@ func autoConvert_apiextensions_JSONSchemaProps_To_v1beta1_JSONSchemaProps(in *ap
 	out.XListType = (*string)(unsafe.Pointer(in.XListType))
 	out.XMapType = (*string)(unsafe.Pointer(in.XMapType))
 	out.XValidations = *(*ValidationRules)(unsafe.Pointer(&in.XValidations))
+	out.XEmbeddedType = (*string)(unsafe.Pointer(in.XEmbeddedType))
 	return nil
 }
 

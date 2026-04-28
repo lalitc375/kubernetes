@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	structuralschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	apiextensionsvalidation "k8s.io/apiextensions-apiserver/pkg/apiserver/validation"
 )
 
@@ -41,6 +42,46 @@ type customResourceValidator struct {
 	kind                  schema.GroupVersionKind
 	schemaValidator       apiextensionsvalidation.SchemaValidator
 	statusSchemaValidator apiextensionsvalidation.SchemaValidator
+	structuralSchema      *structuralschema.Structural
+}
+
+type EmbeddedValidationFunc func(fldPath *field.Path, obj map[string]interface{}) field.ErrorList
+
+var embeddedValidators = map[string]EmbeddedValidationFunc{}
+
+func RegisterEmbeddedValidator(embeddedType string, validator EmbeddedValidationFunc) {
+	embeddedValidators[embeddedType] = validator
+}
+
+func (a customResourceValidator) validateEmbeddedTypes(fldPath *field.Path, obj interface{}, s *structuralschema.Structural) field.ErrorList {
+	if s == nil || obj == nil {
+		return nil
+	}
+	var allErrs field.ErrorList
+
+	if len(s.XEmbeddedType) > 0 {
+		if validator, ok := embeddedValidators[s.XEmbeddedType]; ok {
+			if m, ok := obj.(map[string]interface{}); ok {
+				allErrs = append(allErrs, validator(fldPath, m)...)
+			}
+		}
+	}
+
+	switch x := obj.(type) {
+	case map[string]interface{}:
+		for k, v := range x {
+			if prop, ok := s.Properties[k]; ok {
+				allErrs = append(allErrs, a.validateEmbeddedTypes(fldPath.Child(k), v, &prop)...)
+			} else if s.AdditionalProperties != nil && s.AdditionalProperties.Structural != nil {
+				allErrs = append(allErrs, a.validateEmbeddedTypes(fldPath.Child(k), v, s.AdditionalProperties.Structural)...)
+			}
+		}
+	case []interface{}:
+		for i, v := range x {
+			allErrs = append(allErrs, a.validateEmbeddedTypes(fldPath.Index(i), v, s.Items)...)
+		}
+	}
+	return allErrs
 }
 
 func (a customResourceValidator) Validate(ctx context.Context, obj *unstructured.Unstructured, scale *apiextensions.CustomResourceSubresourceScale) field.ErrorList {
@@ -52,6 +93,7 @@ func (a customResourceValidator) Validate(ctx context.Context, obj *unstructured
 
 	allErrs = append(allErrs, validation.ValidateObjectMetaAccessor(obj, a.namespaceScoped, validation.NameIsDNSSubdomain, field.NewPath("metadata"))...)
 	allErrs = append(allErrs, apiextensionsvalidation.ValidateCustomResource(nil, obj.UnstructuredContent(), a.schemaValidator)...)
+	allErrs = append(allErrs, a.validateEmbeddedTypes(field.NewPath(""), obj.UnstructuredContent(), a.structuralSchema)...)
 	allErrs = append(allErrs, a.ValidateScaleSpec(ctx, obj, scale)...)
 	allErrs = append(allErrs, a.ValidateScaleStatus(ctx, obj, scale)...)
 
@@ -67,6 +109,7 @@ func (a customResourceValidator) ValidateUpdate(ctx context.Context, obj, old *u
 
 	allErrs = append(allErrs, validation.ValidateObjectMetaAccessorUpdate(obj, old, field.NewPath("metadata"))...)
 	allErrs = append(allErrs, apiextensionsvalidation.ValidateCustomResourceUpdate(nil, obj.UnstructuredContent(), old.UnstructuredContent(), a.schemaValidator, options...)...)
+	allErrs = append(allErrs, a.validateEmbeddedTypes(field.NewPath(""), obj.UnstructuredContent(), a.structuralSchema)...)
 	allErrs = append(allErrs, a.ValidateScaleSpec(ctx, obj, scale)...)
 	allErrs = append(allErrs, a.ValidateScaleStatus(ctx, obj, scale)...)
 

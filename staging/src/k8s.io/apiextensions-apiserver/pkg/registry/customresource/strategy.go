@@ -88,6 +88,7 @@ func NewStrategy(typer runtime.ObjectTyper, namespaceScoped bool, kind schema.Gr
 			kind:                  kind,
 			schemaValidator:       schemaValidator,
 			statusSchemaValidator: statusSchemaValidator,
+			structuralSchema:      structuralSchema,
 		},
 		structuralSchema: structuralSchema,
 		celValidator:     celValidator,

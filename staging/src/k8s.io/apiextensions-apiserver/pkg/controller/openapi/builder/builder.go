@@ -461,6 +461,11 @@ func addEmbeddedProperties(s *spec.Schema, opts Options) {
 			s.Required = append(s.Required, "apiVersion")
 		}
 	}
+
+	if embeddedType, ok := s.VendorExtensible.Extensions.GetString("x-kubernetes-embedded-type"); ok && embeddedType == "core/v1.PodTemplateSpec" {
+		ref := spec.MustCreateRef(refForOpenAPIVersion("#/definitions/io.k8s.api.core.v1.PodTemplateSpec", opts.V2))
+		s.Ref = ref
+	}
 }
 
 // getDefinition gets definition for given Kubernetes type. This function is extracted from

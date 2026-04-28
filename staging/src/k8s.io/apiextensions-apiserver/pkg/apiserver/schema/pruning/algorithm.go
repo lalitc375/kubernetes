@@ -55,7 +55,7 @@ var metaFields = map[string]bool{
 }
 
 func prune(x interface{}, s *structuralschema.Structural, opts *structuralschema.UnknownFieldPathOptions) {
-	if s != nil && s.XPreserveUnknownFields {
+	if s != nil && (s.XPreserveUnknownFields || len(s.XEmbeddedType) > 0) {
 		skipPrune(x, s, opts)
 		return
 	}

@@ -35,6 +35,9 @@ import (
 	celconfig "k8s.io/apiserver/pkg/apis/cel"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	apiservercel "k8s.io/apiserver/pkg/cel"
+	"k8s.io/apiserver/pkg/cel/common"
+	"k8s.io/apiserver/pkg/cel/openapi"
+	"k8s.io/apiserver/pkg/cel/openapi/resolver"
 	"k8s.io/klog/v2"
 )
 
@@ -47,10 +50,11 @@ type validator struct {
 	failPolicy            *v1.FailurePolicyType
 	// compileError holds any compilation error from the CEL expressions.
 	// If non-nil, the validator will return an error result based on the failPolicy.
-	compileError error
+	compileError   error
+	schemaResolver resolver.SchemaResolver
 }
 
-func NewValidator(validationFilter cel.ConditionEvaluator, celMatcher matchconditions.Matcher, auditAnnotationFilter, messageFilter cel.ConditionEvaluator, failPolicy *v1.FailurePolicyType, err error) Validator {
+func NewValidator(validationFilter cel.ConditionEvaluator, celMatcher matchconditions.Matcher, auditAnnotationFilter, messageFilter cel.ConditionEvaluator, failPolicy *v1.FailurePolicyType, err error, schemaResolver resolver.SchemaResolver) Validator {
 	return &validator{
 		celMatcher:            celMatcher,
 		validationFilter:      validationFilter,
@@ -58,7 +62,22 @@ func NewValidator(validationFilter cel.ConditionEvaluator, celMatcher matchcondi
 		messageFilter:         messageFilter,
 		failPolicy:            failPolicy,
 		compileError:          err,
+		schemaResolver:        schemaResolver,
 	}
+}
+
+func (v *validator) resolveSchema(gvk schema.GroupVersionKind) (*openapi.Schema, error) {
+	if v.schemaResolver == nil {
+		return nil, nil
+	}
+	s, err := v.schemaResolver.ResolveSchema(gvk)
+	if err != nil {
+		if errors.Is(err, resolver.ErrSchemaNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &openapi.Schema{Schema: common.WithTypeAndObjectMeta(s)}, nil
 }
 
 func policyDecisionActionForError(f v1.FailurePolicyType) PolicyDecisionAction {
@@ -89,17 +108,21 @@ func (v *validator) Validate(ctx context.Context, matchedResource schema.GroupVe
 	} else {
 		f = *v.failPolicy
 	}
-	if v.compileError != nil {
+	newErrorResult := func(message string) ValidateResult {
 		return ValidateResult{
 			Decisions: []PolicyDecision{
 				{
-					Action:     policyDecisionActionForError(f),
+					Action:     ActionDeny,
 					Evaluation: EvalError,
-					Message:    v.compileError.Error(),
+					Message:    message,
 				},
 			},
 		}
 	}
+	if v.compileError != nil {
+		return newErrorResult(v.compileError.Error())
+	}
+
 	if v.celMatcher != nil {
 		matchResults := v.celMatcher.Match(ctx, versionedAttr, versionedParams, authz)
 		if matchResults.Error != nil {
@@ -122,6 +145,20 @@ func (v *validator) Validate(ctx context.Context, matchedResource schema.GroupVe
 
 	optionalVars := cel.OptionalVariableBindings{VersionedParams: versionedParams, Authorizer: authz}
 	expressionOptionalVars := cel.OptionalVariableBindings{VersionedParams: versionedParams}
+
+	if v.schemaResolver != nil && versionedParams != nil {
+		gvk := versionedParams.GetObjectKind().GroupVersionKind()
+		schema, err := v.resolveSchema(gvk)
+		if err != nil {
+			return newErrorResult(err.Error())
+		}
+		if schema != nil {
+			optionalVars.ParamsSchema = schema
+			expressionOptionalVars.ParamsSchema = schema
+			versionedParams.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
 	admissionRequest := cel.CreateAdmissionRequest(versionedAttr.Attributes, metav1.GroupVersionResource(matchedResource), metav1.GroupVersionKind(versionedAttr.VersionedKind))
 	// Decide which fields are exposed
 	ns := cel.CreateNamespaceObject(namespace)

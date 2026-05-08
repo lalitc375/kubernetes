@@ -26,6 +26,8 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/spec"
 )
 
+const extGVK = "x-kubernetes-group-version-kind"
+
 // DefinitionsSchemaResolver resolves the schema of a built-in type
 // by looking up the OpenAPI definitions.
 type DefinitionsSchemaResolver struct {
@@ -60,7 +62,6 @@ func (d *DefinitionsSchemaResolver) ResolveSchema(gvk schema.GroupVersionKind) (
 		return nil, fmt.Errorf("cannot resolve %v: %w", gvk, ErrSchemaNotFound)
 	}
 	s, err := PopulateRefs(func(ref string) (*spec.Schema, bool) {
-		// find the schema by the ref string, and return a deep copy
 		def, ok := d.defs[ref]
 		if !ok {
 			return nil, false

@@ -32,6 +32,7 @@ import (
 	apiservercel "k8s.io/apiserver/pkg/cel"
 	"k8s.io/apiserver/pkg/cel/environment"
 	"k8s.io/apiserver/pkg/cel/lazy"
+	"k8s.io/apiserver/pkg/cel/openapi/resolver"
 )
 
 const variablesTypeName = "kubernetes.variables"
@@ -61,7 +62,7 @@ type CompositedEvaluator struct {
 	state *compositionState
 }
 
-func NewCompositedCompiler(envSet *environment.EnvSet) (*CompositedCompiler, error) {
+func NewCompositedCompiler(envSet *environment.EnvSet, schemaResolver resolver.SchemaResolver) (*CompositedCompiler, error) {
 	newMapType := apiservercel.NewObjectType(variablesTypeName, map[string]*apiservercel.DeclField{})
 
 	newEnvSet, err := envSet.Extend(environment.VersionedOptions{
@@ -84,8 +85,8 @@ func NewCompositedCompiler(envSet *environment.EnvSet) (*CompositedCompiler, err
 	}
 
 	compiler := NewCompiler(state.EnvSet)
-	conditionCompiler := &conditionCompiler{compiler}
-	mutation := &mutatingCompiler{compiler}
+	conditionCompiler := &conditionCompiler{compiler: compiler, schemaResolver: schemaResolver}
+	mutation := &mutatingCompiler{compiler: compiler, schemaResolver: schemaResolver}
 	return &CompositedCompiler{
 		Compiler:          compiler,
 		ConditionCompiler: conditionCompiler,
@@ -97,7 +98,7 @@ func NewCompositedCompiler(envSet *environment.EnvSet) (*CompositedCompiler, err
 // NewCompositedCompilerForTypeChecking creates a CompositedCompiler for type checking.
 // It initializes the composition state but leaves the Compilers nil, as they are expected
 // to be replaced by the caller (who is doing type checking).
-func NewCompositedCompilerForTypeChecking(envSet *environment.EnvSet) (*CompositedCompiler, error) {
+func NewCompositedCompilerForTypeChecking(envSet *environment.EnvSet, schemaResolver resolver.SchemaResolver) (*CompositedCompiler, error) {
 	newMapType := apiservercel.NewObjectType(variablesTypeName, map[string]*apiservercel.DeclField{})
 
 	newEnvSet, err := envSet.Extend(environment.VersionedOptions{
@@ -119,7 +120,7 @@ func NewCompositedCompilerForTypeChecking(envSet *environment.EnvSet) (*Composit
 		compiledVariables: map[string]CompilationResult{},
 	}
 	return &CompositedCompiler{
-		state: state,
+		state:             state,
 	}, nil
 }
 

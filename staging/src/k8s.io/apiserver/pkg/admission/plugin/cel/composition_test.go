@@ -202,7 +202,7 @@ func TestCompositedPolicies(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			compiler, err := NewCompositedCompiler(environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion()))
+			compiler, err := NewCompositedCompiler(environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion()), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -255,7 +255,7 @@ func TestCompilerIsolation(t *testing.T) {
 	baseEnv := environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion())
 
 	// Create first compiler with variable "foo"
-	compiler1, err := NewCompositedCompiler(baseEnv)
+	compiler1, err := NewCompositedCompiler(baseEnv, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -265,7 +265,7 @@ func TestCompilerIsolation(t *testing.T) {
 	compiler1.CompileAndStoreVariables(vars1, OptionalVariableDeclarations{}, environment.StoredExpressions)
 
 	// Create second compiler with variable "baz"
-	compiler2, err := NewCompositedCompiler(baseEnv)
+	compiler2, err := NewCompositedCompiler(baseEnv, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

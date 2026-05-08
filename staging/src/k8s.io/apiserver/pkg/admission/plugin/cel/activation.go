@@ -18,32 +18,137 @@ package cel
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/google/cel-go/interpreter"
 	"math"
+	"reflect"
 	"time"
+
+	"github.com/google/cel-go/interpreter"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/cel"
+	"k8s.io/apiserver/pkg/cel/common"
 	"k8s.io/apiserver/pkg/cel/library"
+	"k8s.io/apiserver/pkg/cel/openapi"
+	"k8s.io/apiserver/pkg/cel/openapi/resolver"
 )
+
+// objectWithGVK wraps a runtime.Object to provide a GroupVersionKind for CEL evaluation
+// without mutating the shared underlying object.
+type objectWithGVK struct {
+	runtime.Object
+	gvk schema.GroupVersionKind
+}
+
+func (o objectWithGVK) GetObjectKind() schema.ObjectKind {
+	return objectKindWithGVK{gvk: o.gvk}
+}
+
+func (o objectWithGVK) UnwrapCELValue() interface{} {
+	return o.Object
+}
+
+type objectKindWithGVK struct {
+	gvk schema.GroupVersionKind
+}
+
+func (k objectKindWithGVK) GroupVersionKind() schema.GroupVersionKind {
+	return k.gvk
+}
+
+func (k objectKindWithGVK) SetGroupVersionKind(gvk schema.GroupVersionKind) {}
+
+// prepareVal returns a CEL-compatible value for the given object.
+// It uses TypedToVal for native objects with schemas, the underlying map for Unstructured, and falls back to JSON conversion.
+func prepareVal(obj any, schema common.Schema, gvk schema.GroupVersionKind) (any, error) {
+	if obj == nil {
+		return nil, nil
+	}
+	// Short-circuit for unstructured objects.
+	if u, ok := obj.(*unstructured.Unstructured); ok {
+		if u == nil {
+			return nil, nil
+		}
+		return u.Object, nil
+	}
+
+	val := reflect.ValueOf(obj)
+	if val.Kind() == reflect.Ptr && val.IsNil() {
+		return nil, nil
+	}
+
+	if schema != nil {
+		if !gvk.Empty() {
+			if ro, ok := obj.(runtime.Object); ok {
+				obj = objectWithGVK{Object: ro, gvk: gvk}
+			}
+		}
+		return common.TypedToVal(obj, schema), nil
+	}
+
+	v, err := convertObjectToUnstructured(obj)
+	if err != nil {
+		return nil, err
+	}
+	return v.Object, nil
+}
+
+func resolveSchema(schemaResolver resolver.SchemaResolver, gvk schema.GroupVersionKind) (*openapi.Schema, error) {
+	if schemaResolver == nil {
+		return nil, nil
+	}
+	s, err := schemaResolver.ResolveSchema(gvk)
+	if err != nil {
+		if errors.Is(err, resolver.ErrSchemaNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &openapi.Schema{Schema: common.WithTypeAndObjectMeta(s)}, nil
+}
 
 // newActivation creates an activation for CEL admission plugins from the given request, admission chain and
 // variable binding information.
-func newActivation(compositionCtx CompositionContext, versionedAttr *admission.VersionedAttributes, request *admissionv1.AdmissionRequest, inputs OptionalVariableBindings, namespace *v1.Namespace) (*evaluationActivation, error) {
-	oldObjectVal, err := objectToResolveVal(versionedAttr.VersionedOldObject)
+func newActivation(compositionCtx CompositionContext, versionedAttr *admission.VersionedAttributes, request *admissionv1.AdmissionRequest, inputs OptionalVariableBindings, namespace *v1.Namespace, schemaResolver resolver.SchemaResolver) (*evaluationActivation, error) {
+	var oldObjectVal, objectVal, requestVal, namespaceVal any
+	var err error
+
+	var objectSchema, oldObjectSchema, namespaceSchema common.Schema
+	if schemaResolver != nil {
+		if schema, err := resolveSchema(schemaResolver, versionedAttr.VersionedKind); err == nil && schema != nil {
+			objectSchema = schema
+			oldObjectSchema = schema
+		}
+		if schema, err := resolveSchema(schemaResolver, v1.SchemeGroupVersion.WithKind("Namespace")); err == nil && schema != nil {
+			namespaceSchema = schema
+		}
+	}
+
+	oldObjectVal, err = prepareVal(versionedAttr.VersionedOldObject, oldObjectSchema, versionedAttr.VersionedKind)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare oldObject variable for evaluation: %w", err)
 	}
-	objectVal, err := objectToResolveVal(versionedAttr.VersionedObject)
+
+	objectVal, err = prepareVal(versionedAttr.VersionedObject, objectSchema, versionedAttr.VersionedKind)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare object variable for evaluation: %w", err)
 	}
-	var paramsVal, authorizerVal, requestResourceAuthorizerVal any
+
+	var paramsVal any
+	var authorizerVal, requestResourceAuthorizerVal any
 	if inputs.VersionedParams != nil {
-		paramsVal, err = objectToResolveVal(inputs.VersionedParams)
+		var paramsGVK schema.GroupVersionKind
+		v := reflect.ValueOf(inputs.VersionedParams)
+		if v.Kind() != reflect.Ptr || !v.IsNil() {
+			paramsGVK = inputs.VersionedParams.GetObjectKind().GroupVersionKind()
+		}
+		paramsVal, err = prepareVal(inputs.VersionedParams, inputs.ParamsSchema, paramsGVK)
 		if err != nil {
 			return nil, fmt.Errorf("failed to prepare params variable for evaluation: %w", err)
 		}
@@ -54,19 +159,21 @@ func newActivation(compositionCtx CompositionContext, versionedAttr *admission.V
 		requestResourceAuthorizerVal = library.NewResourceAuthorizerVal(versionedAttr.GetUserInfo(), inputs.Authorizer, versionedAttr)
 	}
 
-	requestVal, err := convertObjectToUnstructured(request)
+	requestVal, err = createAdmissionRequestValue(request, objectVal, oldObjectVal)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare request variable for evaluation: %w", err)
 	}
-	namespaceVal, err := objectToResolveVal(namespace)
+
+	namespaceVal, err = prepareVal(namespace, namespaceSchema, v1.SchemeGroupVersion.WithKind("Namespace"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare namespace variable for evaluation: %w", err)
 	}
+
 	va := &evaluationActivation{
 		object:                    objectVal,
 		oldObject:                 oldObjectVal,
 		params:                    paramsVal,
-		request:                   requestVal.Object,
+		request:                   requestVal,
 		namespace:                 namespaceVal,
 		authorizer:                authorizerVal,
 		requestResourceAuthorizer: requestResourceAuthorizerVal,
@@ -80,12 +187,13 @@ func newActivation(compositionCtx CompositionContext, versionedAttr *admission.V
 }
 
 type evaluationActivation struct {
-	object, oldObject, params, request, namespace, authorizer, requestResourceAuthorizer, variables interface{}
+	object, oldObject, params, request, namespace    any
+	authorizer, requestResourceAuthorizer, variables any
 }
 
 // ResolveName returns a value from the activation by qualified name, or false if the name
 // could not be found.
-func (a *evaluationActivation) ResolveName(name string) (interface{}, bool) {
+func (a *evaluationActivation) ResolveName(name string) (any, bool) {
 	switch name {
 	case ObjectVarName:
 		return a.object, true

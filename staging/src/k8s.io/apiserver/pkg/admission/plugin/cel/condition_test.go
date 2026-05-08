@@ -42,8 +42,13 @@ import (
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	apiservercel "k8s.io/apiserver/pkg/cel"
+	"k8s.io/apiserver/pkg/cel/common"
 	"k8s.io/apiserver/pkg/cel/environment"
 	pointer "k8s.io/utils/ptr"
+
+	"k8s.io/apiserver/pkg/cel/openapi"
+	"k8s.io/apiserver/pkg/cel/openapi/resolver"
+	"k8s.io/kube-openapi/pkg/validation/spec"
 )
 
 type testCondition struct {
@@ -194,6 +199,8 @@ func TestCondition(t *testing.T) {
 		authorizer       authorizer.UnconditionalAuthorizer
 		testPerCallLimit uint64
 		namespaceObject  *corev1.Namespace
+		enableSelectors  bool
+		ObjectSchema     common.Schema
 
 		compatibilityVersion *version.Version
 		envType              environment.Type
@@ -850,6 +857,71 @@ func TestCondition(t *testing.T) {
 			envType:              environment.StoredExpressions,
 			compatibilityVersion: version.MajorMinor(1, 2),
 		},
+		{
+			name: "valid syntax with schema for typed object",
+			validations: []ExpressionAccessor{
+				&testCondition{
+					Expression: "object.spec.nodeName == 'testnode'",
+				},
+			},
+			attributes: newValidAttribute(&podObject, false),
+			results: []EvaluationResult{
+				{
+					EvalResult: celtypes.True,
+				},
+			},
+			hasParamKind: false,
+			ObjectSchema: &openapi.Schema{
+				Schema: &spec.Schema{
+					SchemaProps: spec.SchemaProps{
+						Type: []string{"object"},
+						Properties: map[string]spec.Schema{
+							"spec": {
+								SchemaProps: spec.SchemaProps{
+									Type: []string{"object"},
+									Properties: map[string]spec.Schema{
+										"nodeName": {
+											SchemaProps: spec.SchemaProps{
+												Type: []string{"string"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid schema for typed object",
+			validations: []ExpressionAccessor{
+				&testCondition{
+					Expression: "object.spec.nodeName == 'testnode'",
+				},
+			},
+			attributes: newValidAttribute(&podObject, false),
+			results: []EvaluationResult{
+				{
+					Error: errors.New("no such key: nodeName"),
+				},
+			},
+			hasParamKind: false,
+			ObjectSchema: &openapi.Schema{
+				Schema: &spec.Schema{
+					SchemaProps: spec.SchemaProps{
+						Type: []string{"object"},
+						Properties: map[string]spec.Schema{
+							"spec": {
+								SchemaProps: spec.SchemaProps{
+									Type: []string{"integer"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -872,7 +944,11 @@ func TestCondition(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			c := NewConditionCompiler(env)
+			var resolver resolver.SchemaResolver
+			if tc.ObjectSchema != nil {
+				resolver = &fakeSchemaResolver{schema: tc.ObjectSchema}
+			}
+			c := NewConditionCompiler(env, resolver)
 			envType := tc.envType
 			if envType == "" {
 				envType = environment.NewExpressions
@@ -1542,4 +1618,15 @@ func endpointStatusUpdateAttributes() admission.Attributes {
 	return admission.NewAttributesRecord(
 		attrs.GetObject(), attrs.GetObject(), attrs.GetKind(), attrs.GetNamespace(), attrs.GetName(),
 		attrs.GetResource(), "status", admission.Update, &metav1.UpdateOptions{}, false, nil)
+}
+
+type fakeSchemaResolver struct {
+	schema common.Schema
+}
+
+func (f *fakeSchemaResolver) ResolveSchema(gvk schema.GroupVersionKind) (*spec.Schema, error) {
+	if openapiSchema, ok := f.schema.(*openapi.Schema); ok {
+		return openapiSchema.Schema, nil
+	}
+	return nil, nil
 }

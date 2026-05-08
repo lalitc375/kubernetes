@@ -27,6 +27,9 @@ import (
 	"sigs.k8s.io/structured-merge-diff/v6/value"
 	"sync"
 
+	"k8s.io/apimachinery/pkg/runtime"
+	runtimeSchema "k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
 	"github.com/google/cel-go/common/types/traits"
@@ -38,6 +41,23 @@ func TypedToVal(val interface{}, schema Schema) ref.Val {
 	if val == nil {
 		return types.NullValue
 	}
+
+	var gvk runtimeSchema.GroupVersionKind
+	if obj, ok := val.(runtime.Object); ok {
+		vObj := reflect.ValueOf(obj)
+		if vObj.Kind() != reflect.Pointer || !vObj.IsNil() {
+			if objGVK := obj.GetObjectKind().GroupVersionKind(); !objGVK.Empty() {
+				gvk = objGVK
+			}
+		}
+	}
+	if wrapper, ok := val.(interface{ UnwrapCELValue() interface{} }); ok {
+		val = wrapper.UnwrapCELValue()
+		if val == nil {
+			return types.NullValue
+		}
+	}
+
 	v := reflect.ValueOf(val)
 	if !v.IsValid() {
 		return types.NewErr("invalid data, got invalid reflect value: %v", v)
@@ -48,6 +68,7 @@ func TypedToVal(val interface{}, schema Schema) ref.Val {
 		}
 		v = v.Elem()
 	}
+
 	val = v.Interface()
 
 	switch typedVal := val.(type) {
@@ -121,17 +142,15 @@ func TypedToVal(val interface{}, schema Schema) ref.Val {
 		}
 		return &typedMap{value: v, valuesSchema: schema.AdditionalProperties().Schema()}
 	case reflect.Struct:
-		if schema.Properties() == nil {
-			return types.NewErr("invalid schema for struct type: %v", schema)
+		if schema.IsXEmbeddedResource() {
+			schema = schema.WithTypeAndObjectMeta()
 		}
 		return &typedStruct{
 			value: v,
 			propSchema: func(key string) (Schema, bool) {
-				if schema, ok := schema.Properties()[key]; ok {
-					return schema, true
-				}
-				return nil, false
+				return schema.Property(key)
 			},
+			gvk: gvk,
 		}
 	// Match type aliases to primitives by kind
 	case reflect.Bool:
@@ -153,6 +172,10 @@ type typedStruct struct {
 
 	// propSchema finds the schema to use for a particular map key.
 	propSchema func(key string) (Schema, bool)
+
+	// gvk is the GroupVersionKind of the object, if known.
+	// This is used to virtualize kind and apiVersion fields if they are missing or empty in the struct.
+	gvk runtimeSchema.GroupVersionKind
 }
 
 func (s *typedStruct) ConvertToNative(typeDesc reflect.Type) (interface{}, error) {
@@ -223,6 +246,19 @@ func (s *typedStruct) lookupField(key ref.Val) (ref.Val, bool) {
 
 	cacheEntry := value.TypeReflectEntryOf(s.value.Type())
 	fieldCache, ok := cacheEntry.Fields()[fieldName]
+
+	// Virtualize kind and apiVersion if they are missing or empty in the struct
+	if !s.gvk.Empty() && (fieldName == "kind" || fieldName == "apiVersion") {
+		if !ok || fieldCache.CanOmit(fieldCache.GetFrom(s.value)) {
+			if fieldName == "kind" && s.gvk.Kind != "" {
+				return types.String(s.gvk.Kind), true
+			}
+			if fieldName == "apiVersion" {
+				return types.String(s.gvk.GroupVersion().String()), true
+			}
+		}
+	}
+
 	if !ok {
 		return nil, false
 	}

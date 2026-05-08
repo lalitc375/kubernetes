@@ -206,7 +206,7 @@ func (c *dispatcher) Dispatch(ctx context.Context, a admission.Attributes, o adm
 							APIVersion: definition.Spec.ParamKind.APIVersion,
 							Kind:       definition.Spec.ParamKind.Kind,
 						},
-						nested: param,
+						Nested: param,
 					}
 				}
 
@@ -378,7 +378,7 @@ func (a auditAnnotationCollector) publish(policyName string, attributes admissio
 // is needed for CEL expressions to be able to access the value.
 type wrappedParam struct {
 	metav1.TypeMeta
-	nested runtime.Object
+	Nested runtime.Object
 }
 
 func (w *wrappedParam) MarshalJSON() ([]byte, error) {
@@ -390,7 +390,7 @@ func (w *wrappedParam) UnmarshalJSON(data []byte) error {
 }
 
 func (w *wrappedParam) ToUnstructured() interface{} {
-	res, err := runtime.DefaultUnstructuredConverter.ToUnstructured(w.nested)
+	res, err := runtime.DefaultUnstructuredConverter.ToUnstructured(w.Nested)
 
 	if err != nil {
 		return nil
@@ -411,10 +411,14 @@ func (w *wrappedParam) ToUnstructured() interface{} {
 func (w *wrappedParam) DeepCopyObject() runtime.Object {
 	return &wrappedParam{
 		TypeMeta: w.TypeMeta,
-		nested:   w.nested.DeepCopyObject(),
+		Nested:   w.Nested.DeepCopyObject(),
 	}
 }
 
 func (w *wrappedParam) GetObjectKind() schema.ObjectKind {
 	return w
+}
+
+func (w *wrappedParam) UnwrapCELValue() interface{} {
+	return w.Nested
 }

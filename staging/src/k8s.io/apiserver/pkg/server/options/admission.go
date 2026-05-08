@@ -38,11 +38,13 @@ import (
 	apiserverapi "k8s.io/apiserver/pkg/apis/apiserver"
 	apiserverapiv1 "k8s.io/apiserver/pkg/apis/apiserver/v1"
 	apiserverapiv1alpha1 "k8s.io/apiserver/pkg/apis/apiserver/v1alpha1"
+	"k8s.io/apiserver/pkg/cel/openapi/resolver"
 	"k8s.io/apiserver/pkg/server"
 	cacheddiscovery "k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/component-base/compatibility"
 	"k8s.io/component-base/featuregate"
@@ -157,7 +159,14 @@ func (a *AdmissionOptions) ApplyTo(
 	discoveryRESTMapper := restmapper.NewDeferredDiscoveryRESTMapper(discoveryClient)
 	genericInitializer := initializer.New(kubeClient, dynamicClient, informers, c.Authorization.Authorizer, features,
 		effectiveVersion, c.DrainedNotify(), discoveryRESTMapper)
-	initializersChain := admission.PluginInitializers{initializer.NewAPIServerIDInitializer(c.APIServerID), genericInitializer}
+
+	var schemaResolver resolver.SchemaResolver
+	if c.OpenAPIConfig != nil && c.OpenAPIConfig.GetDefinitions != nil {
+		schemaResolver = resolver.NewDefinitionsSchemaResolver(c.OpenAPIConfig.GetDefinitions, k8sscheme.Scheme)
+	}
+
+	schemaResolverInitializer := initializer.NewSchemaResolverInitializer(schemaResolver)
+	initializersChain := admission.PluginInitializers{initializer.NewAPIServerIDInitializer(c.APIServerID), genericInitializer, schemaResolverInitializer}
 	initializersChain = append(initializersChain, pluginInitializers...)
 
 	admissionPostStartHook := func(hookContext server.PostStartHookContext) error {

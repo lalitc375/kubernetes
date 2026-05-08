@@ -34,6 +34,7 @@ import (
 	"k8s.io/apiserver/pkg/admission/plugin/webhook/matchconditions"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/apiserver/pkg/cel/environment"
+	"k8s.io/apiserver/pkg/cel/openapi/resolver"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -71,12 +72,18 @@ type PolicyHook = generic.PolicyHook[*Policy, *PolicyBinding, PolicyEvaluator]
 
 type Plugin struct {
 	*generic.Plugin[PolicyHook]
+	schemaResolver resolver.SchemaResolver
 }
 
 var _ admission.Interface = &Plugin{}
 var _ admission.ValidationInterface = &Plugin{}
 var _ initializer.WantsExcludedAdmissionResources = &Plugin{}
 var _ initializer.WantsManifestLoaders = &Plugin{}
+var _ initializer.WantsSchemaResolver = &Plugin{}
+
+func (a *Plugin) SetSchemaResolver(resolver resolver.SchemaResolver) {
+	a.schemaResolver = resolver
+}
 
 // SetManifestLoaders provides the manifest load functions for scheme-based defaulting and validation.
 func (a *Plugin) SetManifestLoaders(loaders *initializer.ManifestLoaders) {
@@ -87,7 +94,7 @@ func (a *Plugin) SetManifestLoaders(loaders *initializer.ManifestLoaders) {
 	a.SetStaticSourceFactory(func(manifestsDir string) (generic.ReloadableSource[PolicyHook], error) {
 		staticSource := source.NewStaticPolicySource(manifestsDir, a.GetAPIServerID(),
 			func(p *v1.ValidatingAdmissionPolicy) (Validator, error) {
-				v := compilePolicy(p)
+				v := compilePolicy(p, a.schemaResolver)
 				if err := v.CompileError(); err != nil {
 					return nil, err
 				}
@@ -114,26 +121,25 @@ func NewPlugin(configFile io.Reader) (*Plugin, error) {
 
 	handler := admission.NewHandler(admission.Connect, admission.Create, admission.Delete, admission.Update)
 
-	p := &Plugin{
-		Plugin: generic.NewPlugin(
-			handler,
-			func(f informers.SharedInformerFactory, client kubernetes.Interface, dynamicClient dynamic.Interface, restMapper meta.RESTMapper) generic.Source[PolicyHook] {
-				return generic.NewPolicySource(
-					f.Admissionregistration().V1().ValidatingAdmissionPolicies().Informer(),
-					f.Admissionregistration().V1().ValidatingAdmissionPolicyBindings().Informer(),
-					NewValidatingAdmissionPolicyAccessor,
-					NewValidatingAdmissionPolicyBindingAccessor,
-					compilePolicy,
-					f,
-					dynamicClient,
-					restMapper,
-				)
-			},
-			func(a authorizer.UnconditionalAuthorizer, m *matching.Matcher, client kubernetes.Interface) generic.Dispatcher[PolicyHook] {
-				return NewDispatcher(a, generic.NewPolicyMatcher(m))
-			},
-		),
-	}
+	p := &Plugin{}
+	p.Plugin = generic.NewPlugin(
+		handler,
+		func(f informers.SharedInformerFactory, client kubernetes.Interface, dynamicClient dynamic.Interface, restMapper meta.RESTMapper) generic.Source[PolicyHook] {
+			return generic.NewPolicySource(
+				f.Admissionregistration().V1().ValidatingAdmissionPolicies().Informer(),
+				f.Admissionregistration().V1().ValidatingAdmissionPolicyBindings().Informer(),
+				NewValidatingAdmissionPolicyAccessor,
+				NewValidatingAdmissionPolicyBindingAccessor,
+				func(policy *Policy) Validator { return compilePolicy(policy, p.schemaResolver) },
+				f,
+				dynamicClient,
+				restMapper,
+			)
+		},
+		func(a authorizer.UnconditionalAuthorizer, m *matching.Matcher, client kubernetes.Interface) generic.Dispatcher[PolicyHook] {
+			return NewDispatcher(a, generic.NewPolicyMatcher(m))
+		},
+	)
 	p.SetEnabled(true)
 	p.SetStaticManifestsDir(cfg.StaticManifestsDir)
 	return p, nil
@@ -144,7 +150,7 @@ func (a *Plugin) Validate(ctx context.Context, attr admission.Attributes, o admi
 	return a.Plugin.Dispatch(ctx, attr, o)
 }
 
-func compilePolicy(policy *Policy) Validator {
+func compilePolicy(policy *Policy, schemaResolver resolver.SchemaResolver) Validator {
 	hasParam := false
 	if policy.Spec.ParamKind != nil {
 		hasParam = true
@@ -155,9 +161,9 @@ func compilePolicy(policy *Policy) Validator {
 	var matcher matchconditions.Matcher = nil
 	matchConditions := policy.Spec.MatchConditions
 	compositionEnvTemplate := getCompositionEnvTemplateWithStrictCost()
-	filterCompiler, err := cel.NewCompositedCompiler(compositionEnvTemplate)
+	filterCompiler, err := cel.NewCompositedCompiler(compositionEnvTemplate, schemaResolver)
 	if err != nil {
-		return NewValidator(nil, nil, nil, nil, failurePolicy, err)
+		return NewValidator(nil, nil, nil, nil, failurePolicy, err, schemaResolver)
 	}
 	filterCompiler.CompileAndStoreVariables(convertv1beta1Variables(policy.Spec.Variables), optionalVars, environment.StoredExpressions)
 
@@ -175,6 +181,7 @@ func compilePolicy(policy *Policy) Validator {
 		filterCompiler.CompileCondition(convertv1MessageExpressions(policy.Spec.Validations), expressionOptionalVars, environment.StoredExpressions),
 		failurePolicy,
 		nil,
+		schemaResolver,
 	)
 
 	return res

@@ -1141,7 +1141,7 @@ var structSchema = &spec.Schema{
 }
 
 func (s Struct) GetObjectKind() schema.ObjectKind {
-	panic("not implemented")
+	return schema.EmptyObjectKind
 }
 
 func (s Struct) DeepCopyObject() runtime.Object {
@@ -1164,7 +1164,7 @@ var nestedSchema = &spec.Schema{
 }
 
 func (s Nested) GetObjectKind() schema.ObjectKind {
-	panic("not implemented")
+	return schema.EmptyObjectKind
 }
 
 func (s Nested) DeepCopyObject() runtime.Object {
@@ -1276,7 +1276,7 @@ var complexSchema = &spec.Schema{
 }
 
 func (c Complex) GetObjectKind() schema.ObjectKind {
-	panic("not implemented")
+	return schema.EmptyObjectKind
 }
 
 func (c Complex) DeepCopyObject() runtime.Object {

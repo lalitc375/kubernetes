@@ -41,13 +41,17 @@ import (
 	webhookgeneric "k8s.io/apiserver/pkg/admission/plugin/webhook/generic"
 	celconfig "k8s.io/apiserver/pkg/apis/cel"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
+	"k8s.io/apiserver/pkg/cel/common"
+	"k8s.io/apiserver/pkg/cel/openapi"
+	"k8s.io/apiserver/pkg/cel/openapi/resolver"
 )
 
-func NewDispatcher(a authorizer.UnconditionalAuthorizer, m *matching.Matcher, tcm patch.TypeConverterManager) generic.Dispatcher[PolicyHook] {
+func NewDispatcher(a authorizer.UnconditionalAuthorizer, m *matching.Matcher, tcm patch.TypeConverterManager, schemaResolver resolver.SchemaResolver) generic.Dispatcher[PolicyHook] {
 	res := &dispatcher{
 		matcher:              m,
 		authz:                a,
 		typeConverterManager: tcm,
+		schemaResolver:       schemaResolver,
 	}
 	res.Dispatcher = generic.NewPolicyDispatcher[*Policy, *PolicyBinding, PolicyEvaluator](
 		NewMutatingAdmissionPolicyAccessor,
@@ -62,7 +66,22 @@ type dispatcher struct {
 	matcher              *matching.Matcher
 	authz                authorizer.UnconditionalAuthorizer
 	typeConverterManager patch.TypeConverterManager
+	schemaResolver       resolver.SchemaResolver
 	generic.Dispatcher[PolicyHook]
+}
+
+func (d *dispatcher) resolveSchema(gvk schema.GroupVersionKind) (*openapi.Schema, error) {
+	if d.schemaResolver == nil {
+		return nil, nil
+	}
+	s, err := d.schemaResolver.ResolveSchema(gvk)
+	if err != nil {
+		if errors.Is(err, resolver.ErrSchemaNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &openapi.Schema{Schema: common.WithTypeAndObjectMeta(s)}, nil
 }
 
 func (d *dispatcher) Start(ctx context.Context) error {
@@ -152,6 +171,13 @@ func (d *dispatcher) dispatchInvocations(
 			// This should never happen, we pre-warm versoined attribute
 			// accessors before starting the dispatcher
 			return nil, k8serrors.NewInternalError(err)
+		}
+
+		if invocation.Param != nil {
+			gvk := invocation.Param.GetObjectKind().GroupVersionKind()
+			if !gvk.Empty() {
+				invocation.Param.GetObjectKind().SetGroupVersionKind(gvk)
+			}
 		}
 
 		if invocation.Evaluator.Matcher != nil {
@@ -246,6 +272,17 @@ func (d *dispatcher) dispatchOne(
 		// This can happen if the request is for a resource whose schema
 		// has not been registered with the type converter manager.
 		return k8serrors.NewServiceUnavailable(fmt.Sprintf("Resource kind %s not found. There can be a delay between when CustomResourceDefinitions are created and when they are available.", versionedAttributes.VersionedKind))
+	}
+
+	if d.schemaResolver != nil && optionalVariables.VersionedParams != nil {
+		gvk := optionalVariables.VersionedParams.GetObjectKind().GroupVersionKind()
+		schema, err := d.resolveSchema(gvk)
+		if err != nil {
+			return k8serrors.NewInternalError(err)
+		}
+		if schema != nil {
+			optionalVariables.ParamsSchema = schema
+		}
 	}
 
 	patchRequest := patch.Request{

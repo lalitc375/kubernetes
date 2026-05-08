@@ -23,26 +23,32 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/cel/environment"
+	"k8s.io/apiserver/pkg/cel/openapi/resolver"
 )
 
 // mutatingCompiler provides a MutatingCompiler implementation.
 type mutatingCompiler struct {
-	compiler Compiler
+	compiler       Compiler
+	schemaResolver resolver.SchemaResolver
 }
 
 // CompileMutatingEvaluator compiles a CEL expression for admission plugins and returns an MutatingEvaluator for executing the
 // compiled CEL expression.
 func (p *mutatingCompiler) CompileMutatingEvaluator(expressionAccessor ExpressionAccessor, options OptionalVariableDeclarations, mode environment.Type) MutatingEvaluator {
 	compilationResult := p.compiler.CompileCELExpression(expressionAccessor, options, mode)
-	return NewMutatingEvaluator(compilationResult)
+	return NewMutatingEvaluator(compilationResult, p.schemaResolver)
 }
 
 type mutatingEvaluator struct {
 	compilationResult CompilationResult
+	schemaResolver    resolver.SchemaResolver
 }
 
-func NewMutatingEvaluator(compilationResult CompilationResult) MutatingEvaluator {
-	return &mutatingEvaluator{compilationResult}
+func NewMutatingEvaluator(compilationResult CompilationResult, schemaResolver resolver.SchemaResolver) MutatingEvaluator {
+	return &mutatingEvaluator{
+		compilationResult: compilationResult,
+		schemaResolver:    schemaResolver,
+	}
 }
 
 // ForInput evaluates the compiled CEL expression and returns an evaluation result
@@ -52,7 +58,7 @@ func (p *mutatingEvaluator) ForInput(ctx context.Context, versionedAttr *admissi
 	// if this activation supports composition, we will need the compositionCtx. It may be nil.
 	compositionCtx, _ := ctx.(CompositionContext)
 
-	activation, err := newActivation(compositionCtx, versionedAttr, request, inputs, namespace)
+	activation, err := newActivation(compositionCtx, versionedAttr, request, inputs, namespace, p.schemaResolver)
 	if err != nil {
 		return EvaluationResult{}, -1, err
 	}

@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
+	"k8s.io/apiserver/pkg/cel/common"
 	"k8s.io/apiserver/pkg/cel/environment"
 )
 
@@ -77,6 +78,8 @@ type OptionalVariableBindings struct {
 	// VersionedParams provides the "params" variable binding. This variable binding may
 	// be set to nil even when OptionalVariableDeclarations.HashParams is set to true.
 	VersionedParams runtime.Object
+	// ParamsSchema is the schema of the params.
+	ParamsSchema common.Schema
 	// Authorizer provides the authorizer used for the "authorizer" and
 	// "authorizer.requestResource" variable bindings. If the expression was compiled with
 	// OptionalVariableDeclarations.HasAuthorizer set to true this must be non-nil.

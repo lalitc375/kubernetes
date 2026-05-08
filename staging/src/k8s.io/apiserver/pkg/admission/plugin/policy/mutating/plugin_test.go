@@ -52,7 +52,7 @@ func setupTest(
 		compiler,
 		func(a authorizer.UnconditionalAuthorizer, m *matching.Matcher, i kubernetes.Interface) generic.Dispatcher[mutating.PolicyHook] {
 			// Use embedded schemas rather than discovery schemas
-			return mutating.NewDispatcher(a, m, patch.NewTypeConverterManager(nil, openapitest.NewEmbeddedFileClient()))
+			return mutating.NewDispatcher(a, m, patch.NewTypeConverterManager(nil, openapitest.NewEmbeddedFileClient()), nil)
 		},
 		nil,
 		[]meta.RESTMapping{

@@ -1317,7 +1317,7 @@ func createCompiler(allowComposition bool) plugincel.Compiler {
 	if !allowComposition {
 		return getStrictStatelessCELCompiler()
 	}
-	compiler, err := plugincel.NewCompositedCompiler(environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion()))
+	compiler, err := plugincel.NewCompositedCompiler(environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion()), nil)
 	if err != nil {
 		// should never happen, but cannot panic either.
 		utilruntime.HandleError(err)

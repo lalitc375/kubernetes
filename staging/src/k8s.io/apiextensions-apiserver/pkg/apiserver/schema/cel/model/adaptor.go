@@ -33,43 +33,49 @@ type StructuralOrBool struct {
 }
 
 func (sb *StructuralOrBool) Schema() common.Schema {
-	if sb.StructuralOrBool.Structural == nil {
+	if sb == nil || sb.StructuralOrBool == nil || sb.StructuralOrBool.Structural == nil {
 		return nil
 	}
 	return &Structural{Structural: sb.StructuralOrBool.Structural}
 }
 
 func (sb *StructuralOrBool) Allows() bool {
+	if sb == nil || sb.StructuralOrBool == nil {
+		return false
+	}
 	return sb.StructuralOrBool.Bool
 }
 
 func (s *Structural) Type() string {
+	if s == nil || s.Structural == nil {
+		return ""
+	}
 	return s.Structural.Type
 }
 
 func (s *Structural) Format() string {
-	if s.Structural.ValueValidation == nil {
+	if s == nil || s.Structural == nil || s.Structural.ValueValidation == nil {
 		return ""
 	}
 	return s.Structural.ValueValidation.Format
 }
 
 func (s *Structural) Pattern() string {
-	if s.Structural.ValueValidation == nil {
+	if s == nil || s.Structural == nil || s.Structural.ValueValidation == nil {
 		return ""
 	}
 	return s.Structural.ValueValidation.Pattern
 }
 
 func (s *Structural) Items() common.Schema {
-	if s.Structural.Items == nil {
+	if s == nil || s.Structural == nil || s.Structural.Items == nil {
 		return nil
 	}
 	return &Structural{Structural: s.Structural.Items}
 }
 
 func (s *Structural) Properties() map[string]common.Schema {
-	if s.Structural.Properties == nil {
+	if s == nil || s.Structural == nil || s.Structural.Properties == nil {
 		return nil
 	}
 	res := make(map[string]common.Schema, len(s.Structural.Properties))
@@ -80,19 +86,32 @@ func (s *Structural) Properties() map[string]common.Schema {
 	return res
 }
 
+func (s *Structural) Property(name string) (common.Schema, bool) {
+	if s == nil || s.Structural == nil || s.Structural.Properties == nil {
+		return nil, false
+	}
+	if prop, ok := s.Structural.Properties[name]; ok {
+		return &Structural{Structural: &prop}, true
+	}
+	return nil, false
+}
+
 func (s *Structural) AdditionalProperties() common.SchemaOrBool {
-	if s.Structural.AdditionalProperties == nil {
+	if s == nil || s.Structural == nil || s.Structural.AdditionalProperties == nil {
 		return nil
 	}
 	return &StructuralOrBool{StructuralOrBool: s.Structural.AdditionalProperties}
 }
 
 func (s *Structural) Default() any {
+	if s == nil || s.Structural == nil || s.Structural.Default.Object == nil {
+		return nil
+	}
 	return s.Structural.Default.Object
 }
 
 func (s *Structural) Minimum() *float64 {
-	if s.Structural.ValueValidation == nil {
+	if s == nil || s.Structural == nil || s.Structural.ValueValidation == nil {
 		return nil
 	}
 	return s.Structural.ValueValidation.Minimum

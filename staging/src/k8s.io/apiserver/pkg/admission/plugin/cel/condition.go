@@ -28,15 +28,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/cel/environment"
+	"k8s.io/apiserver/pkg/cel/openapi/resolver"
 )
 
 // conditionCompiler implement the interface ConditionCompiler.
 type conditionCompiler struct {
-	compiler Compiler
+	compiler       Compiler
+	schemaResolver resolver.SchemaResolver
 }
 
-func NewConditionCompiler(env *environment.EnvSet) ConditionCompiler {
-	return &conditionCompiler{compiler: NewCompiler(env)}
+func NewConditionCompiler(env *environment.EnvSet, schemaResolver resolver.SchemaResolver) ConditionCompiler {
+	return &conditionCompiler{compiler: NewCompiler(env), schemaResolver: schemaResolver}
 }
 
 // CompileCondition compiles the cel expressions defined in the ExpressionAccessors into a ConditionEvaluator
@@ -48,17 +50,19 @@ func (c *conditionCompiler) CompileCondition(expressionAccessors []ExpressionAcc
 		}
 		compilationResults[i] = c.compiler.CompileCELExpression(expressionAccessor, options, mode)
 	}
-	return NewCondition(compilationResults)
+	return NewCondition(compilationResults, c.schemaResolver)
 }
 
 // condition implements the ConditionEvaluator interface
 type condition struct {
 	compilationResults []CompilationResult
+	schemaResolver     resolver.SchemaResolver
 }
 
-func NewCondition(compilationResults []CompilationResult) ConditionEvaluator {
+func NewCondition(compilationResults []CompilationResult, schemaResolver resolver.SchemaResolver) ConditionEvaluator {
 	return &condition{
-		compilationResults,
+		compilationResults: compilationResults,
+		schemaResolver:     schemaResolver,
 	}
 }
 
@@ -73,29 +77,17 @@ func convertObjectToUnstructured(obj interface{}) (*unstructured.Unstructured, e
 	return &unstructured.Unstructured{Object: ret}, nil
 }
 
-func objectToResolveVal(r runtime.Object) (interface{}, error) {
-	if r == nil || reflect.ValueOf(r).IsNil() {
-		return nil, nil
-	}
-	v, err := convertObjectToUnstructured(r)
-	if err != nil {
-		return nil, err
-	}
-	return v.Object, nil
-}
-
 // ForInput evaluates the compiled CEL expressions converting them into CELEvaluations
 // errors per evaluation are returned on the Evaluation object
 // runtimeCELCostBudget was added for testing purpose only. Callers should always use const RuntimeCELCostBudget from k8s.io/apiserver/pkg/apis/cel/config.go as input.
 func (c *condition) ForInput(ctx context.Context, versionedAttr *admission.VersionedAttributes, request *admissionv1.AdmissionRequest, inputs OptionalVariableBindings, namespace *v1.Namespace, runtimeCELCostBudget int64) ([]EvaluationResult, int64, error) {
-	// TODO: replace unstructured with ref.Val for CEL variables when native type support is available
 	evaluations := make([]EvaluationResult, len(c.compilationResults))
 	var err error
 
 	// if this activation supports composition, we will need the compositionCtx. It may be nil.
 	compositionCtx, _ := ctx.(CompositionContext)
 
-	activation, err := newActivation(compositionCtx, versionedAttr, request, inputs, namespace)
+	activation, err := newActivation(compositionCtx, versionedAttr, request, inputs, namespace, c.schemaResolver)
 	if err != nil {
 		return nil, -1, err
 	}

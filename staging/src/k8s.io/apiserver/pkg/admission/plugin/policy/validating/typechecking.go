@@ -183,7 +183,7 @@ func (c *TypeChecker) compiler(ctx *TypeCheckingContext, typeOverwrite typeOverw
 	if err != nil {
 		return nil, err
 	}
-	compiler, err := plugincel.NewCompositedCompilerForTypeChecking(envSet)
+	compiler, err := plugincel.NewCompositedCompilerForTypeChecking(envSet, nil)
 	if err != nil {
 		return nil, err
 	}

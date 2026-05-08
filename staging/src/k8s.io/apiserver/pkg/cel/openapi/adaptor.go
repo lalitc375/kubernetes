@@ -18,7 +18,6 @@ package openapi
 
 import (
 	"github.com/google/cel-go/common/types/ref"
-
 	apiservercel "k8s.io/apiserver/pkg/cel"
 	"k8s.io/apiserver/pkg/cel/common"
 	"k8s.io/kube-openapi/pkg/validation/spec"
@@ -31,129 +30,178 @@ type Schema struct {
 	Schema *spec.Schema
 }
 
-type SchemaOrBool struct {
-	SchemaOrBool *spec.SchemaOrBool
-}
-
-func (sb *SchemaOrBool) Schema() common.Schema {
-	if sb.SchemaOrBool.Schema == nil {
-		return nil
-	}
-	return &Schema{Schema: sb.SchemaOrBool.Schema}
-}
-
-func (sb *SchemaOrBool) Allows() bool {
-	return sb.SchemaOrBool.Allows
-}
-
 func (s *Schema) Type() string {
-	if len(s.Schema.Type) == 0 {
+	if s == nil || s.Schema == nil || len(s.Schema.Type) == 0 {
 		return ""
 	}
 	return s.Schema.Type[0]
 }
 
 func (s *Schema) Format() string {
+	if s == nil || s.Schema == nil {
+		return ""
+	}
 	return s.Schema.Format
 }
 
-func (s *Schema) Pattern() string {
-	return s.Schema.Pattern
-}
-
 func (s *Schema) Items() common.Schema {
-	if s.Schema.Items == nil || s.Schema.Items.Schema == nil {
+	if s == nil || s.Schema == nil || s.Schema.Items == nil || s.Schema.Items.Schema == nil {
 		return nil
 	}
-	return &Schema{Schema: s.Schema.Items.Schema}
+	return &Schema{s.Schema.Items.Schema}
 }
 
 func (s *Schema) Properties() map[string]common.Schema {
-	if s.Schema.Properties == nil {
+	if s == nil || s.Schema == nil || s.Schema.Properties == nil {
 		return nil
 	}
 	res := make(map[string]common.Schema, len(s.Schema.Properties))
-	for n, prop := range s.Schema.Properties {
-		// map value is unaddressable, create a shallow copy
-		// this is a shallow non-recursive copy
-		s := prop
-		res[n] = &Schema{Schema: &s}
+	for k, v := range s.Schema.Properties {
+		res[k] = &Schema{&v}
 	}
 	return res
 }
 
+func (s *Schema) Property(name string) (common.Schema, bool) {
+	if s == nil || s.Schema == nil || s.Schema.Properties == nil {
+		return nil, false
+	}
+	if prop, ok := s.Schema.Properties[name]; ok {
+		return &Schema{Schema: &prop}, true
+	}
+	return nil, false
+}
+
 func (s *Schema) AdditionalProperties() common.SchemaOrBool {
-	if s.Schema.AdditionalProperties == nil {
+	if s == nil || s.Schema == nil || s.Schema.AdditionalProperties == nil {
 		return nil
 	}
-	return &SchemaOrBool{SchemaOrBool: s.Schema.AdditionalProperties}
+	return &SchemaOrBool{s.Schema.AdditionalProperties}
 }
 
 func (s *Schema) Default() any {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	return s.Schema.Default
 }
 
 func (s *Schema) Minimum() *float64 {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	return s.Schema.Minimum
 }
 
 func (s *Schema) IsExclusiveMinimum() bool {
+	if s == nil || s.Schema == nil {
+		return false
+	}
 	return s.Schema.ExclusiveMinimum
 }
 
 func (s *Schema) Maximum() *float64 {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	return s.Schema.Maximum
 }
 
 func (s *Schema) IsExclusiveMaximum() bool {
+	if s == nil || s.Schema == nil {
+		return false
+	}
 	return s.Schema.ExclusiveMaximum
 }
 
 func (s *Schema) MultipleOf() *float64 {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	return s.Schema.MultipleOf
 }
 
-func (s *Schema) UniqueItems() bool {
-	return s.Schema.UniqueItems
-}
-
 func (s *Schema) MinItems() *int64 {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	return s.Schema.MinItems
 }
 
 func (s *Schema) MaxItems() *int64 {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	return s.Schema.MaxItems
 }
 
+func (s *Schema) UniqueItems() bool {
+	if s == nil || s.Schema == nil {
+		return false
+	}
+	return s.Schema.UniqueItems
+}
+
 func (s *Schema) MinLength() *int64 {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	return s.Schema.MinLength
 }
 
 func (s *Schema) MaxLength() *int64 {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	return s.Schema.MaxLength
 }
 
-func (s *Schema) MinProperties() *int64 {
-	return s.Schema.MinProperties
+func (s *Schema) Pattern() string {
+	if s == nil || s.Schema == nil {
+		return ""
+	}
+	return s.Schema.Pattern
 }
 
 func (s *Schema) MaxProperties() *int64 {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	return s.Schema.MaxProperties
 }
 
+func (s *Schema) MinProperties() *int64 {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
+	return s.Schema.MinProperties
+}
+
 func (s *Schema) Required() []string {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	return s.Schema.Required
 }
 
 func (s *Schema) Enum() []any {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	return s.Schema.Enum
 }
 
 func (s *Schema) Nullable() bool {
+	if s == nil || s.Schema == nil {
+		return false
+	}
 	return s.Schema.Nullable
 }
 
 func (s *Schema) AllOf() []common.Schema {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	var res []common.Schema
 	for _, nestedSchema := range s.Schema.AllOf {
 		res = append(res, &Schema{&nestedSchema})
@@ -162,6 +210,9 @@ func (s *Schema) AllOf() []common.Schema {
 }
 
 func (s *Schema) AnyOf() []common.Schema {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	var res []common.Schema
 	for _, nestedSchema := range s.Schema.AnyOf {
 		res = append(res, &Schema{&nestedSchema})
@@ -170,6 +221,9 @@ func (s *Schema) AnyOf() []common.Schema {
 }
 
 func (s *Schema) OneOf() []common.Schema {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	var res []common.Schema
 	for _, nestedSchema := range s.Schema.OneOf {
 		res = append(res, &Schema{&nestedSchema})
@@ -178,42 +232,84 @@ func (s *Schema) OneOf() []common.Schema {
 }
 
 func (s *Schema) Not() common.Schema {
-	if s.Schema.Not == nil {
+	if s == nil || s.Schema == nil || s.Schema.Not == nil {
 		return nil
 	}
 	return &Schema{s.Schema.Not}
 }
 
 func (s *Schema) IsXIntOrString() bool {
+	if s == nil || s.Schema == nil {
+		return false
+	}
 	return isXIntOrString(s.Schema)
 }
 
 func (s *Schema) IsXEmbeddedResource() bool {
+	if s == nil || s.Schema == nil {
+		return false
+	}
 	return isXEmbeddedResource(s.Schema)
 }
 
 func (s *Schema) IsXPreserveUnknownFields() bool {
+	if s == nil || s.Schema == nil {
+		return false
+	}
 	return isXPreserveUnknownFields(s.Schema)
 }
 
 func (s *Schema) XListType() string {
+	if s == nil || s.Schema == nil {
+		return ""
+	}
 	return getXListType(s.Schema)
 }
 
 func (s *Schema) XMapType() string {
+	if s == nil || s.Schema == nil {
+		return ""
+	}
 	return getXMapType(s.Schema)
 }
 
 func (s *Schema) XListMapKeys() []string {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	return getXListMapKeys(s.Schema)
 }
 
 func (s *Schema) XValidations() []common.ValidationRule {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	return getXValidations(s.Schema)
 }
 
 func (s *Schema) WithTypeAndObjectMeta() common.Schema {
+	if s == nil || s.Schema == nil {
+		return nil
+	}
 	return &Schema{common.WithTypeAndObjectMeta(s.Schema)}
+}
+
+type SchemaOrBool struct {
+	SchemaOrBool *spec.SchemaOrBool
+}
+
+func (s *SchemaOrBool) Schema() common.Schema {
+	if s == nil || s.SchemaOrBool == nil || s.SchemaOrBool.Schema == nil {
+		return nil
+	}
+	return &Schema{s.SchemaOrBool.Schema}
+}
+
+func (s *SchemaOrBool) Allows() bool {
+	if s == nil || s.SchemaOrBool == nil {
+		return false
+	}
+	return s.SchemaOrBool.Allows
 }
 
 func UnstructuredToVal(unstructured any, schema *spec.Schema) ref.Val {

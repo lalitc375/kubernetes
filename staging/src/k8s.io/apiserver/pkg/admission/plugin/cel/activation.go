@@ -125,11 +125,10 @@ func newActivation(compositionCtx CompositionContext, versionedAttr *admission.V
 		requestResourceAuthorizerVal = library.NewResourceAuthorizerVal(versionedAttr.GetUserInfo(), inputs.Authorizer, versionedAttr)
 	}
 
-	requestUnstr, err := convertObjectToUnstructured(request)
+	requestVal, err = createAdmissionRequestValue(request, objectVal, oldObjectVal)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare request variable for evaluation: %w", err)
 	}
-	requestVal = requestUnstr.Object
 
 	namespaceVal, err = prepareVal(namespace, namespaceSchema)
 	if err != nil {

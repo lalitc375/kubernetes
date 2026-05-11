@@ -121,16 +121,10 @@ func TypedToVal(val interface{}, schema Schema) ref.Val {
 		}
 		return &typedMap{value: v, valuesSchema: schema.AdditionalProperties().Schema()}
 	case reflect.Struct:
-		if schema.Properties() == nil {
-			return types.NewErr("invalid schema for struct type: %v", schema)
-		}
 		return &typedStruct{
 			value: v,
 			propSchema: func(key string) (Schema, bool) {
-				if schema, ok := schema.Properties()[key]; ok {
-					return schema, true
-				}
-				return nil, false
+				return schema.Property(key)
 			},
 		}
 	// Match type aliases to primitives by kind

@@ -68,10 +68,7 @@ func UnstructuredToVal(unstructured interface{}, schema Schema) ref.Val {
 				value:  m,
 				schema: schema,
 				propSchema: func(key string) (Schema, bool) {
-					if schema, ok := schema.Properties()[key]; ok {
-						return schema, true
-					}
-					return nil, false
+					return schema.Property(key)
 				},
 			}
 		}

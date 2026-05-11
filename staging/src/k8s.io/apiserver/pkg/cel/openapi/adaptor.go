@@ -82,6 +82,16 @@ func (s *Schema) Properties() map[string]common.Schema {
 	return res
 }
 
+func (s *Schema) Property(name string) (common.Schema, bool) {
+	if s.Schema.Properties == nil {
+		return nil, false
+	}
+	if prop, ok := s.Schema.Properties[name]; ok {
+		return &Schema{Schema: &prop}, true
+	}
+	return nil, false
+}
+
 func (s *Schema) AdditionalProperties() common.SchemaOrBool {
 	if s.Schema.AdditionalProperties == nil {
 		return nil

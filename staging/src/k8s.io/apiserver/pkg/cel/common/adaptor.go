@@ -37,6 +37,9 @@ type Schema interface {
 	// The values of the returned map are of the adapted type.
 	Properties() map[string]Schema
 
+	// Property returns the OpenAPI property with the given name, or nil if this field does not exist.
+	Property(name string) (Schema, bool)
+
 	// AdditionalProperties returns the OpenAPI additional properties field,
 	// or nil if this field does not exist.
 	AdditionalProperties() SchemaOrBool

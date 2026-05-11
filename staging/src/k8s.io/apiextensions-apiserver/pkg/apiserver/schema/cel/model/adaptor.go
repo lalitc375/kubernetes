@@ -80,6 +80,16 @@ func (s *Structural) Properties() map[string]common.Schema {
 	return res
 }
 
+func (s *Structural) Property(name string) (common.Schema, bool) {
+	if s.Structural.Properties == nil {
+		return nil, false
+	}
+	if prop, ok := s.Structural.Properties[name]; ok {
+		return &Structural{Structural: &prop}, true
+	}
+	return nil, false
+}
+
 func (s *Structural) AdditionalProperties() common.SchemaOrBool {
 	if s.Structural.AdditionalProperties == nil {
 		return nil

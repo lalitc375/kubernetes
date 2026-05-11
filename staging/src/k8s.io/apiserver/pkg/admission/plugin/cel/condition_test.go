@@ -857,6 +857,71 @@ func TestCondition(t *testing.T) {
 			envType:              environment.StoredExpressions,
 			compatibilityVersion: version.MajorMinor(1, 2),
 		},
+		{
+			name: "valid syntax with schema for typed object",
+			validations: []ExpressionAccessor{
+				&testCondition{
+					Expression: "object.spec.nodeName == 'testnode'",
+				},
+			},
+			attributes: newValidAttribute(&podObject, false),
+			results: []EvaluationResult{
+				{
+					EvalResult: celtypes.True,
+				},
+			},
+			hasParamKind: false,
+			ObjectSchema: &openapi.Schema{
+				Schema: &spec.Schema{
+					SchemaProps: spec.SchemaProps{
+						Type: []string{"object"},
+						Properties: map[string]spec.Schema{
+							"spec": {
+								SchemaProps: spec.SchemaProps{
+									Type: []string{"object"},
+									Properties: map[string]spec.Schema{
+										"nodeName": {
+											SchemaProps: spec.SchemaProps{
+												Type: []string{"string"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid schema for typed object",
+			validations: []ExpressionAccessor{
+				&testCondition{
+					Expression: "object.spec.nodeName == 'testnode'",
+				},
+			},
+			attributes: newValidAttribute(&podObject, false),
+			results: []EvaluationResult{
+				{
+					Error: errors.New("no such key: nodeName"),
+				},
+			},
+			hasParamKind: false,
+			ObjectSchema: &openapi.Schema{
+				Schema: &spec.Schema{
+					SchemaProps: spec.SchemaProps{
+						Type: []string{"object"},
+						Properties: map[string]spec.Schema{
+							"spec": {
+								SchemaProps: spec.SchemaProps{
+									Type: []string{"integer"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range cases {

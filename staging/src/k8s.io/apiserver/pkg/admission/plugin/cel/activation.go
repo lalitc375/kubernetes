@@ -21,18 +21,21 @@ import (
 	"fmt"
 	"github.com/google/cel-go/interpreter"
 	"math"
+	"reflect"
 	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/cel"
 	"k8s.io/apiserver/pkg/cel/library"
+	"k8s.io/apiserver/pkg/cel/openapi/resolver"
 )
 
 // newActivation creates an activation for CEL admission plugins from the given request, admission chain and
 // variable binding information.
-func newActivation(compositionCtx CompositionContext, versionedAttr *admission.VersionedAttributes, request *admissionv1.AdmissionRequest, inputs OptionalVariableBindings, namespace *v1.Namespace) (*evaluationActivation, error) {
+func newActivation(compositionCtx CompositionContext, versionedAttr *admission.VersionedAttributes, request *admissionv1.AdmissionRequest, inputs OptionalVariableBindings, namespace *v1.Namespace, schemaResolver resolver.SchemaResolver) (*evaluationActivation, error) {
 	oldObjectVal, err := objectToResolveVal(versionedAttr.VersionedOldObject)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare oldObject variable for evaluation: %w", err)
@@ -187,4 +190,15 @@ func (a *evaluationActivation) Evaluate(ctx context.Context, compositionCtx Comp
 		evaluation.EvalResult = evalResult
 	}
 	return evaluation, remainingBudget, nil
+}
+
+func objectToResolveVal(r runtime.Object) (interface{}, error) {
+	if r == nil || reflect.ValueOf(r).IsNil() {
+		return nil, nil
+	}
+	v, err := convertObjectToUnstructured(r)
+	if err != nil {
+		return nil, err
+	}
+	return v.Object, nil
 }

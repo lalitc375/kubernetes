@@ -49,8 +49,8 @@ type fakeCelFilter struct {
 	throwError  bool
 }
 
-func (f *fakeCelFilter) ForInput(ctx context.Context, versionedAttr *admission.VersionedAttributes, request *admissionv1.AdmissionRequest, optionalVars cel.OptionalVariableBindings, namespace *corev1.Namespace, costBudget int64) ([]cel.EvaluationResult, int64, error) {
-	if costBudget <= 0 { // this filter will cost 1, so cost = 0 means fail.
+func (f *fakeCelFilter) ForInput(ctx context.Context, versionedAttr *admission.VersionedAttributes, request *admissionv1.AdmissionRequest, optionalVars cel.OptionalVariableBindings, namespace *corev1.Namespace, runtimeCELCostBudget int64) ([]cel.EvaluationResult, int64, error) {
+	if runtimeCELCostBudget <= 0 { // this filter will cost 1, so cost = 0 means fail.
 		return nil, -1, &apiservercel.Error{
 			Type:   apiservercel.ErrorTypeInvalid,
 			Detail: "validation failed due to running out of cost budget, no further validation rules will be run",
@@ -60,7 +60,7 @@ func (f *fakeCelFilter) ForInput(ctx context.Context, versionedAttr *admission.V
 	if f.throwError {
 		return nil, -1, errors.New("test error")
 	}
-	return f.evaluations, costBudget - 1, nil
+	return f.evaluations, runtimeCELCostBudget - 1, nil
 }
 
 func (f *fakeCelFilter) CompilationErrors() []error {
@@ -1035,7 +1035,7 @@ func TestContextCanceled(t *testing.T) {
 
 	fakeAttr := admission.NewAttributesRecord(nil, nil, schema.GroupVersionKind{}, "default", "foo", schema.GroupVersionResource{}, "", admission.Create, nil, false, nil)
 	fakeVersionedAttr, _ := admission.NewVersionedAttributes(fakeAttr, schema.GroupVersionKind{}, nil)
-	fc := cel.NewConditionCompiler(environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion()))
+	fc := cel.NewConditionCompiler(environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion()), nil)
 	f := fc.CompileCondition([]cel.ExpressionAccessor{&ValidationCondition{Expression: "[1,2,3,4,5,6,7,8,9,10].map(x, [1,2,3,4,5,6,7,8,9,10].map(y, x*y)) == []"}}, cel.OptionalVariableDeclarations{HasParams: false, HasAuthorizer: false}, environment.StoredExpressions)
 	v := validator{
 		failPolicy:       &fail,

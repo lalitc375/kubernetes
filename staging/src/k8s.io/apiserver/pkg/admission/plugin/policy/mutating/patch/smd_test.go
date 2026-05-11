@@ -336,7 +336,7 @@ func TestApplyConfiguration(t *testing.T) {
 		},
 	}
 
-	compiler, err := cel.NewCompositedCompiler(environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion()))
+	compiler, err := cel.NewCompositedCompiler(environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion()), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

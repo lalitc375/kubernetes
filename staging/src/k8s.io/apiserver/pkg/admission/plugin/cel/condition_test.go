@@ -42,8 +42,13 @@ import (
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	apiservercel "k8s.io/apiserver/pkg/cel"
+	"k8s.io/apiserver/pkg/cel/common"
 	"k8s.io/apiserver/pkg/cel/environment"
 	pointer "k8s.io/utils/ptr"
+
+	"k8s.io/apiserver/pkg/cel/openapi"
+	"k8s.io/apiserver/pkg/cel/openapi/resolver"
+	"k8s.io/kube-openapi/pkg/validation/spec"
 )
 
 type testCondition struct {
@@ -194,6 +199,8 @@ func TestCondition(t *testing.T) {
 		authorizer       authorizer.UnconditionalAuthorizer
 		testPerCallLimit uint64
 		namespaceObject  *corev1.Namespace
+		enableSelectors  bool
+		ObjectSchema     common.Schema
 
 		compatibilityVersion *version.Version
 		envType              environment.Type
@@ -872,7 +879,11 @@ func TestCondition(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			c := NewConditionCompiler(env)
+			var resolver resolver.SchemaResolver
+			if tc.ObjectSchema != nil {
+				resolver = &fakeSchemaResolver{schema: tc.ObjectSchema}
+			}
+			c := NewConditionCompiler(env, resolver)
 			envType := tc.envType
 			if envType == "" {
 				envType = environment.NewExpressions
@@ -1542,4 +1553,15 @@ func endpointStatusUpdateAttributes() admission.Attributes {
 	return admission.NewAttributesRecord(
 		attrs.GetObject(), attrs.GetObject(), attrs.GetKind(), attrs.GetNamespace(), attrs.GetName(),
 		attrs.GetResource(), "status", admission.Update, &metav1.UpdateOptions{}, false, nil)
+}
+
+type fakeSchemaResolver struct {
+	schema common.Schema
+}
+
+func (f *fakeSchemaResolver) ResolveSchema(gvk schema.GroupVersionKind) (*spec.Schema, error) {
+	if openapiSchema, ok := f.schema.(*openapi.Schema); ok {
+		return openapiSchema.Schema, nil
+	}
+	return nil, nil
 }

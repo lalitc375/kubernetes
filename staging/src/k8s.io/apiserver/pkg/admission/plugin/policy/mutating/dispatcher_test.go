@@ -662,7 +662,7 @@ func TestDispatcher(t *testing.T) {
 				tc.policyHooks[i].Evaluator = compilePolicy(h.Policy)
 			}
 
-			dispatcher := NewDispatcher(fakeAuthorizer{}, matcher, tcManager)
+			dispatcher := NewDispatcher(fakeAuthorizer{}, matcher, tcManager, nil)
 			err = dispatcher.Start(ctx)
 			if err != nil {
 				t.Fatalf("error starting dispatcher: %v", err)

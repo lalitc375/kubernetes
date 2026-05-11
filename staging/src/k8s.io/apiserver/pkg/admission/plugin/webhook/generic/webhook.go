@@ -139,7 +139,7 @@ func NewWebhook(handler *admission.Handler, configFile io.Reader, sourceFactory 
 		namespaceMatcher:   &namespace.Matcher{},
 		objectMatcher:      &object.Matcher{},
 		dispatcher:         dispatcherFactory(&cm),
-		filterCompiler:     cel.NewConditionCompiler(environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion())),
+		filterCompiler:     cel.NewConditionCompiler(environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion()), nil),
 	}, nil
 }
 

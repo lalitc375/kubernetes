@@ -39,6 +39,7 @@ import (
 	"k8s.io/apiserver/pkg/admission/plugin/policy/mutating/patch"
 	"k8s.io/apiserver/pkg/admission/plugin/webhook/matchconditions"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
+	"k8s.io/apiserver/pkg/cel/openapi/resolver"
 	"k8s.io/apiserver/pkg/features"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
@@ -87,11 +88,17 @@ type PolicyEvaluator struct {
 // Plugin is an implementation of admission.Interface.
 type Plugin struct {
 	*generic.Plugin[PolicyHook]
+	schemaResolver resolver.SchemaResolver
 }
 
 var _ admission.Interface = &Plugin{}
 var _ admission.MutationInterface = &Plugin{}
 var _ initializer.WantsManifestLoaders = &Plugin{}
+var _ initializer.WantsSchemaResolver = &Plugin{}
+
+func (a *Plugin) SetSchemaResolver(resolver resolver.SchemaResolver) {
+	a.schemaResolver = resolver
+}
 
 // SetManifestLoaders provides the manifest load functions for scheme-based defaulting and validation.
 func (a *Plugin) SetManifestLoaders(loaders *initializer.ManifestLoaders) {
@@ -148,7 +155,7 @@ func NewPlugin(configFile io.Reader) (*Plugin, error) {
 			)
 		},
 		func(a authorizer.UnconditionalAuthorizer, m *matching.Matcher, client kubernetes.Interface) generic.Dispatcher[PolicyHook] {
-			return NewDispatcher(a, m, patch.NewTypeConverterManager(nil, client.Discovery().OpenAPIV3()))
+			return NewDispatcher(a, m, patch.NewTypeConverterManager(nil, client.Discovery().OpenAPIV3()), res.schemaResolver)
 		},
 	)
 	res.SetStaticManifestsDir(cfg.StaticManifestsDir)

@@ -35,7 +35,7 @@ import (
 // returned is a PolicyEvaluator in the same order as the mutations appeared in the policy.
 func compilePolicy(policy *v1.MutatingAdmissionPolicy) PolicyEvaluator {
 	opts := plugincel.OptionalVariableDeclarations{HasParams: policy.Spec.ParamKind != nil, HasAuthorizer: true}
-	compiler, err := plugincel.NewCompositedCompiler(environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion()))
+	compiler, err := plugincel.NewCompositedCompiler(environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion()), nil)
 	if err != nil {
 		return PolicyEvaluator{Error: &apiservercel.Error{
 			Type:   apiservercel.ErrorTypeInternal,

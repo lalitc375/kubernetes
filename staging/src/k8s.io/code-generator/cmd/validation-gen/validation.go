@@ -290,6 +290,22 @@ func (td *typeDiscoverer) DiscoverType(t *types.Type) error {
 	return nil
 }
 
+// nonIncludedTypeErr formats the standard error returned when a referenced
+// type lives in a package the generator wasn't told about and the user
+// hasn't opted to skip it with an opaque tag.
+//
+// label is the noun used in the message ("type", "value type", or "key
+// type"); typ names the offending type (any value the %v verb can format —
+// typically a *types.Type or a string); suggestedTag names the tag the user
+// could add to skip validation for it ("+k8s:opaqueType",
+// "+k8s:eachVal=+k8s:opaqueType", or "+k8s:eachKey=+k8s:opaqueType").
+func nonIncludedTypeErr(fldPath *field.Path, label string, typ any, suggestedTag string) error {
+	return fmt.Errorf("%v: %s %v is in a non-included package; "+
+		"either add this package to validation-gen's --readonly-pkg flag, "+
+		"or add %s to the field to skip validation",
+		fldPath, label, typ, suggestedTag)
+}
+
 // discoverType walks the given type recursively and returns a typeNode
 // representing it. This does not distinguish between discovering a type
 // definition and discovering a field of a struct.  The first time it
@@ -460,10 +476,7 @@ func (td *typeDiscoverer) discoverType(t *types.Type, fldPath *field.Path) (*typ
 				elemNode := thisNode.resolveElemNode()
 				if elemNode == nil {
 					if !thisNode.typeValidations.OpaqueValType {
-						return nil, fmt.Errorf("%v: value type %v is in a non-included package; "+
-							"either add this package to validation-gen's --readonly-pkg flag, "+
-							"or add +k8s:eachVal=+k8s:opaqueType to the field to skip validation",
-							fldPath, util.NativeType(t).Elem)
+						return nil, nonIncludedTypeErr(fldPath, "value type", util.NativeType(t).Elem, "+k8s:eachVal=+k8s:opaqueType")
 					}
 				} else if thisNode.typeValidations.OpaqueValType {
 					// If the type is marked as opaque, we can treat it as it is
@@ -493,10 +506,7 @@ func (td *typeDiscoverer) discoverType(t *types.Type, fldPath *field.Path) (*typ
 				keyNode := thisNode.resolveKeyNode()
 				if keyNode == nil {
 					if !thisNode.typeValidations.OpaqueKeyType {
-						return nil, fmt.Errorf("%v: key type %v is in a non-included package; "+
-							"either add this package to validation-gen's --readonly-pkg flag, "+
-							"or add +k8s:eachKey=+k8s:opaqueType to the field to skip validation",
-							fldPath, util.NativeType(t).Key)
+						return nil, nonIncludedTypeErr(fldPath, "key type", util.NativeType(t).Key, "+k8s:eachKey=+k8s:opaqueType")
 					}
 				} else if thisNode.typeValidations.OpaqueKeyType {
 					// If the type is marked as opaque, we can treat it as it is
@@ -525,10 +535,7 @@ func (td *typeDiscoverer) discoverType(t *types.Type, fldPath *field.Path) (*typ
 				elemNode := thisNode.resolveElemNode()
 				if elemNode == nil {
 					if !thisNode.typeValidations.OpaqueValType {
-						return nil, fmt.Errorf("%v: value type %v is in a non-included package; "+
-							"either add this package to validation-gen's --readonly-pkg flag, "+
-							"or add +k8s:eachVal=+k8s:opaqueType to the field to skip validation",
-							fldPath, util.NativeType(t).Elem)
+						return nil, nonIncludedTypeErr(fldPath, "value type", util.NativeType(t).Elem, "+k8s:eachVal=+k8s:opaqueType")
 					}
 				} else if thisNode.typeValidations.OpaqueValType {
 					// If the type is marked as opaque, we can treat it as it is
@@ -729,10 +736,7 @@ func (td *typeDiscoverer) discoverStruct(thisNode *typeNode, fldPath *field.Path
 		case types.Struct, types.Alias:
 			if child.node == nil { // a non-included type
 				if !child.fieldValidations.OpaqueType {
-					return fmt.Errorf("%v: type %v is in a non-included package; "+
-						"either add this package to validation-gen's --readonly-pkg flag, "+
-						"or add +k8s:opaqueType to the field to skip validation",
-						childPath, childType.String())
+					return nonIncludedTypeErr(childPath, "type", childType, "+k8s:opaqueType")
 				}
 			} else if child.fieldValidations.OpaqueType {
 				// If the field is marked as opaque, we can treat it as it is
@@ -753,10 +757,7 @@ func (td *typeDiscoverer) discoverStruct(thisNode *typeNode, fldPath *field.Path
 			// Validate each value of a list field.
 			if elemNode := child.node.elem.node; elemNode == nil {
 				if !child.fieldValidations.OpaqueValType {
-					return fmt.Errorf("%v: value type %v is in a non-included package; "+
-						"either add this package to validation-gen's --readonly-pkg flag, "+
-						"or add +k8s:eachVal=+k8s:opaqueType to the field to skip validation",
-						childPath, childType.Elem.String())
+					return nonIncludedTypeErr(childPath, "value type", childType.Elem, "+k8s:eachVal=+k8s:opaqueType")
 				}
 			} else if child.fieldValidations.OpaqueValType {
 				// If the field is marked as opaque, we can treat it as it is
@@ -785,10 +786,7 @@ func (td *typeDiscoverer) discoverStruct(thisNode *typeNode, fldPath *field.Path
 			// Validate each key of a map field.
 			if keyNode := child.node.key.node; keyNode == nil {
 				if !child.fieldValidations.OpaqueKeyType {
-					return fmt.Errorf("%v: key type %v is in a non-included package; "+
-						"either add this package to validation-gen's --readonly-pkg flag, "+
-						"or add +k8s:eachKey=+k8s:opaqueType to the field to skip validation",
-						childPath, childType.Key.String())
+					return nonIncludedTypeErr(childPath, "key type", childType.Key, "+k8s:eachKey=+k8s:opaqueType")
 				}
 			} else if child.fieldValidations.OpaqueKeyType {
 				// If the field is marked as opaque, we can treat it as it is
@@ -816,10 +814,7 @@ func (td *typeDiscoverer) discoverStruct(thisNode *typeNode, fldPath *field.Path
 			// Validate each value of a map field.
 			if elemNode := child.node.elem.node; elemNode == nil {
 				if !child.fieldValidations.OpaqueValType {
-					return fmt.Errorf("%v: value type %v is in a non-included package; "+
-						"either add this package to validation-gen's --readonly-pkg flag, "+
-						"or add +k8s:eachVal=+k8s:opaqueType to the field to skip validation",
-						childPath, childType.Elem.String())
+					return nonIncludedTypeErr(childPath, "value type", childType.Elem, "+k8s:eachVal=+k8s:opaqueType")
 				}
 			} else if child.fieldValidations.OpaqueValType {
 				// If the field is marked as opaque, we can treat it as it is

@@ -402,6 +402,45 @@ func TestJSONPatch(t *testing.T) {
 			}}}},
 			expectedErr: "JSON Patch: replace operation does not apply: doc is missing key: /spec/template/spec/containers/-: missing value",
 		},
+		{
+			name: "jsonPatch with complex struct as value",
+			expression: `[
+					JSONPatch{op: "add", path: "/spec/template/spec/containers/1", value: object.spec.template.spec.containers[0]}, 
+				]`,
+			gvr: deploymentGVR,
+			object: &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Template: corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+				Containers: []corev1.Container{{Name: "a"}},
+			}}}},
+			expectedResult: &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Template: corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+				Containers: []corev1.Container{{Name: "a"}, {Name: "a"}},
+			}}}},
+		},
+		{
+			name: "jsonPatch with large complex struct as value",
+			expression: `[
+					JSONPatch{op: "replace", path: "/spec/template/spec", value: object.spec.template.spec}, 
+				]`,
+			gvr: deploymentGVR,
+			object: &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Template: corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+				Containers: []corev1.Container{{Name: "a", Image: "nginx"}},
+			}}}},
+			expectedResult: &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Template: corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+				Containers: []corev1.Container{{Name: "a", Image: "nginx"}},
+			}}}},
+		},
+		{
+			name: "jsonPatch with slice of complex struct as value",
+			expression: `[
+					JSONPatch{op: "add", path: "/spec/template/spec/containers", value: object.spec.template.spec.containers}, 
+				]`,
+			gvr: deploymentGVR,
+			object: &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Template: corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+				Containers: []corev1.Container{{Name: "a"}},
+			}}}},
+			expectedResult: &appsv1.Deployment{Spec: appsv1.DeploymentSpec{Template: corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+				Containers: []corev1.Container{{Name: "a"}},
+			}}}},
+		},
 	}
 
 	compiler, err := cel.NewCompositedCompiler(environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion()))

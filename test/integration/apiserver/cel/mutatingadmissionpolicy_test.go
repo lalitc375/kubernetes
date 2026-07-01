@@ -123,6 +123,100 @@ func TestMutatingAdmissionPolicy(t *testing.T) {
 			},
 		},
 		{
+			name: "jsonPatch with complex struct as value",
+			policies: []*v1.MutatingAdmissionPolicy{
+				mutatingPolicy("json-patch-complex-struct", v1.NeverReinvocationPolicy, matchEndpointResources, nil, v1.Mutation{
+					PatchType: v1.PatchTypeJSONPatch,
+					JSONPatch: &v1.JSONPatch{
+						Expression: `[
+							JSONPatch{op: "add", path: "/subsets/0/addresses", value: [object.subsets[0].notReadyAddresses[0]]}
+						]`,
+					},
+				}),
+			},
+			bindings: []*v1.MutatingAdmissionPolicyBinding{
+				mutatingBinding("json-patch-complex-struct", nil, nil),
+			},
+			requestOperation: v1.Create,
+			requestResource:  corev1.SchemeGroupVersion.WithResource("endpoints"),
+			requestObject: &corev1.Endpoints{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "json-patch-complex-struct-object",
+					Namespace: "default",
+				},
+				Subsets: []corev1.EndpointSubset{
+					{
+						NotReadyAddresses: []corev1.EndpointAddress{
+							{IP: "1.2.3.4"},
+						},
+					},
+				},
+			},
+			expected: &corev1.Endpoints{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "json-patch-complex-struct-object",
+					Namespace: "default",
+				},
+				Subsets: []corev1.EndpointSubset{
+					{
+						Addresses: []corev1.EndpointAddress{
+							{IP: "1.2.3.4"},
+						},
+						NotReadyAddresses: []corev1.EndpointAddress{
+							{IP: "1.2.3.4"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "jsonPatch with slice of complex struct as value",
+			policies: []*v1.MutatingAdmissionPolicy{
+				mutatingPolicy("json-patch-slice-complex-struct", v1.NeverReinvocationPolicy, matchEndpointResources, nil, v1.Mutation{
+					PatchType: v1.PatchTypeJSONPatch,
+					JSONPatch: &v1.JSONPatch{
+						Expression: `[
+							JSONPatch{op: "add", path: "/subsets/0/addresses", value: object.subsets[0].notReadyAddresses}
+						]`,
+					},
+				}),
+			},
+			bindings: []*v1.MutatingAdmissionPolicyBinding{
+				mutatingBinding("json-patch-slice-complex-struct", nil, nil),
+			},
+			requestOperation: v1.Create,
+			requestResource:  corev1.SchemeGroupVersion.WithResource("endpoints"),
+			requestObject: &corev1.Endpoints{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "json-patch-slice-complex-struct-object",
+					Namespace: "default",
+				},
+				Subsets: []corev1.EndpointSubset{
+					{
+						NotReadyAddresses: []corev1.EndpointAddress{
+							{IP: "1.2.3.4"},
+						},
+					},
+				},
+			},
+			expected: &corev1.Endpoints{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "json-patch-slice-complex-struct-object",
+					Namespace: "default",
+				},
+				Subsets: []corev1.EndpointSubset{
+					{
+						Addresses: []corev1.EndpointAddress{
+							{IP: "1.2.3.4"},
+						},
+						NotReadyAddresses: []corev1.EndpointAddress{
+							{IP: "1.2.3.4"},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "multiple policies",
 			policies: []*v1.MutatingAdmissionPolicy{
 				mutatingPolicy("multi-policy-1", v1.NeverReinvocationPolicy, matchEndpointResources, nil, v1.Mutation{
@@ -1296,11 +1390,15 @@ func withMutatingWaitReadyConstraintAndExpression(policy *v1.MutatingAdmissionPo
 		mc.Expression = `object.metadata.?labels["mutation-marker"].hasValue() || ` + mc.Expression
 		policy.Spec.MatchConditions[i] = mc
 	}
-	for _, m := range policy.Spec.Mutations {
+	for i, m := range policy.Spec.Mutations {
 		if m.ApplyConfiguration != nil {
 			bypass := `object.metadata.?labels["mutation-marker"].hasValue() ? Object{} : `
 			m.ApplyConfiguration.Expression = bypass + m.ApplyConfiguration.Expression
+		} else if m.JSONPatch != nil {
+			bypass := `object.metadata.?labels["mutation-marker"].hasValue() ? [] : `
+			m.JSONPatch.Expression = bypass + m.JSONPatch.Expression
 		}
+		policy.Spec.Mutations[i] = m
 	}
 	policy.Spec.Mutations = append([]v1.Mutation{{
 		PatchType: v1.PatchTypeApplyConfiguration,

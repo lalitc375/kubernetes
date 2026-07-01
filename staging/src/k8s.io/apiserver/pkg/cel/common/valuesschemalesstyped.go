@@ -24,6 +24,7 @@ import (
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
 	"github.com/google/cel-go/common/types/traits"
+	"google.golang.org/protobuf/types/known/structpb"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/structured-merge-diff/v6/value"
@@ -150,9 +151,32 @@ func (l *reflectSchemalessTypedList) ConvertToNative(typeDesc reflect.Type) (int
 	switch typeDesc.Kind() {
 	case reflect.Slice:
 		return l.value.Interface(), nil
-	default:
-		return nil, fmt.Errorf("type conversion error from '%s' to '%s'", l.Type(), typeDesc)
 	}
+	if typeDesc == reflect.TypeOf(&structpb.Value{}) {
+		listValue := &structpb.ListValue{Values: make([]*structpb.Value, l.value.Len())}
+		for i := 0; i < l.value.Len(); i++ {
+			item := l.Get(types.Int(i))
+			native, err := item.ConvertToNative(typeDesc)
+			if err != nil {
+				return nil, err
+			}
+			listValue.Values[i] = native.(*structpb.Value)
+		}
+		return &structpb.Value{Kind: &structpb.Value_ListValue{ListValue: listValue}}, nil
+	}
+	if typeDesc == reflect.TypeOf((*any)(nil)).Elem() {
+		listValue := make([]interface{}, l.value.Len())
+		for i := 0; i < l.value.Len(); i++ {
+			item := l.Get(types.Int(i))
+			native, err := item.ConvertToNative(typeDesc)
+			if err != nil {
+				return nil, err
+			}
+			listValue[i] = native
+		}
+		return listValue, nil
+	}
+	return nil, fmt.Errorf("type conversion error from '%s' to '%s'", l.Type(), typeDesc)
 }
 
 func (l *reflectSchemalessTypedList) ConvertToType(typeValue ref.Type) ref.Val {
@@ -279,6 +303,36 @@ type reflectSchemalessTypedMap struct {
 func (m *reflectSchemalessTypedMap) ConvertToNative(typeDesc reflect.Type) (interface{}, error) {
 	if m.value.Type().AssignableTo(typeDesc) {
 		return m.value.Interface(), nil
+	}
+	if typeDesc == reflect.TypeOf(&structpb.Value{}) {
+		structValue := &structpb.Struct{Fields: make(map[string]*structpb.Value)}
+		it := m.Iterator()
+		for it.HasNext() == types.True {
+			key := it.Next()
+			keyStr := string(key.(types.String))
+			item := m.Get(key)
+			native, err := item.ConvertToNative(typeDesc)
+			if err != nil {
+				return nil, err
+			}
+			structValue.Fields[keyStr] = native.(*structpb.Value)
+		}
+		return &structpb.Value{Kind: &structpb.Value_StructValue{StructValue: structValue}}, nil
+	}
+	if typeDesc == reflect.TypeOf((*any)(nil)).Elem() || typeDesc == reflect.TypeOf((*map[string]interface{})(nil)).Elem() {
+		mapValue := make(map[string]interface{})
+		it := m.Iterator()
+		for it.HasNext() == types.True {
+			key := it.Next()
+			keyStr := string(key.(types.String))
+			item := m.Get(key)
+			native, err := item.ConvertToNative(reflect.TypeOf((*any)(nil)).Elem())
+			if err != nil {
+				return nil, err
+			}
+			mapValue[keyStr] = native
+		}
+		return mapValue, nil
 	}
 	return nil, fmt.Errorf("type conversion error from '%s' to '%s'", m.Type(), typeDesc)
 }
@@ -412,6 +466,36 @@ type reflectSchemalessTypedStruct struct {
 func (s *reflectSchemalessTypedStruct) ConvertToNative(typeDesc reflect.Type) (interface{}, error) {
 	if s.value.Type().AssignableTo(typeDesc) {
 		return s.value.Interface(), nil
+	}
+	if typeDesc == reflect.TypeOf(&structpb.Value{}) {
+		structValue := &structpb.Struct{Fields: make(map[string]*structpb.Value)}
+		it := s.Iterator()
+		for it.HasNext() == types.True {
+			key := it.Next()
+			keyStr := string(key.(types.String))
+			item := s.Get(key)
+			native, err := item.ConvertToNative(typeDesc)
+			if err != nil {
+				return nil, err
+			}
+			structValue.Fields[keyStr] = native.(*structpb.Value)
+		}
+		return &structpb.Value{Kind: &structpb.Value_StructValue{StructValue: structValue}}, nil
+	}
+	if typeDesc == reflect.TypeOf((*any)(nil)).Elem() || typeDesc == reflect.TypeOf((*map[string]interface{})(nil)).Elem() {
+		mapValue := make(map[string]interface{})
+		it := s.Iterator()
+		for it.HasNext() == types.True {
+			key := it.Next()
+			keyStr := string(key.(types.String))
+			item := s.Get(key)
+			native, err := item.ConvertToNative(reflect.TypeOf((*any)(nil)).Elem())
+			if err != nil {
+				return nil, err
+			}
+			mapValue[keyStr] = native
+		}
+		return mapValue, nil
 	}
 	return nil, fmt.Errorf("type conversion error from struct type %v to %v", s.value.Type(), typeDesc)
 }

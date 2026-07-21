@@ -687,5 +687,166 @@ func Validate_Struct(
 		errs = append(errs, fn(fldPath.Child("mapTypedefField"), obj.MapTypedefField, oldVal, oldObj != nil)...)
 	}
 
+	{ // field Struct.StructWithReqField
+		fn := func(
+			fldPath *field.Path,
+			obj, oldObj *StructWithRequired,
+			oldValueCorrelated bool) (errs field.ErrorList) {
+			// non-pointer structs with required or union fields are implicitly required
+			// don't revalidate unchanged data
+			if oldValueCorrelated && op.Type == operation.Update {
+				if obj == oldObj || (obj != nil && oldObj != nil && *obj == *oldObj) {
+					return nil
+				}
+			}
+			// call the type's validation function
+			errs = append(errs, Validate_StructWithRequired(ctx, op, fldPath, obj, oldObj)...)
+			return
+		}
+		oldVal := safe.Field(oldObj,
+			func(oldObj *Struct) *StructWithRequired {
+				return &oldObj.StructWithReqField
+			})
+		errs = append(errs, fn(fldPath.Child("structWithReqField"), &obj.StructWithReqField, oldVal, oldObj != nil)...)
+	}
+
+	{ // field Struct.StructWithUnionField
+		fn := func(
+			fldPath *field.Path,
+			obj, oldObj *StructWithUnion,
+			oldValueCorrelated bool) (errs field.ErrorList) {
+			// non-pointer structs with required or union fields are implicitly required
+			// don't revalidate unchanged data
+			if oldValueCorrelated && op.Type == operation.Update {
+				if obj == oldObj || (obj != nil && oldObj != nil && *obj == *oldObj) {
+					return nil
+				}
+			}
+			// call the type's validation function
+			errs = append(errs, Validate_StructWithUnion(ctx, op, fldPath, obj, oldObj)...)
+			return
+		}
+		oldVal := safe.Field(oldObj,
+			func(oldObj *Struct) *StructWithUnion {
+				return &oldObj.StructWithUnionField
+			})
+		errs = append(errs, fn(fldPath.Child("structWithUnionField"), &obj.StructWithUnionField, oldVal, oldObj != nil)...)
+	}
+
+	{ // field Struct.StructWithNestedReqField
+		fn := func(
+			fldPath *field.Path,
+			obj, oldObj *StructWithNestedRequired,
+			oldValueCorrelated bool) (errs field.ErrorList) {
+			// non-pointer structs with required or union fields are implicitly required
+			// don't revalidate unchanged data
+			if oldValueCorrelated && op.Type == operation.Update {
+				if obj == oldObj || (obj != nil && oldObj != nil && *obj == *oldObj) {
+					return nil
+				}
+			}
+			// call the type's validation function
+			errs = append(errs, Validate_StructWithNestedRequired(ctx, op, fldPath, obj, oldObj)...)
+			return
+		}
+		oldVal := safe.Field(oldObj,
+			func(oldObj *Struct) *StructWithNestedRequired {
+				return &oldObj.StructWithNestedReqField
+			})
+		errs = append(errs, fn(fldPath.Child("structWithNestedReqField"), &obj.StructWithNestedReqField, oldVal, oldObj != nil)...)
+	}
+
+	return errs
+}
+
+// Validate_StructWithNestedRequired validates an instance of StructWithNestedRequired according
+// to declarative validation rules in the API schema.
+func Validate_StructWithNestedRequired(
+	ctx context.Context, op operation.Operation, fldPath *field.Path,
+	obj, oldObj *StructWithNestedRequired) (errs field.ErrorList) {
+
+	{ // field StructWithNestedRequired.Nested
+		fn := func(
+			fldPath *field.Path,
+			obj, oldObj *StructWithRequired,
+			oldValueCorrelated bool) (errs field.ErrorList) {
+			// don't revalidate unchanged data
+			if oldValueCorrelated && op.Type == operation.Update {
+				if obj == oldObj || (obj != nil && oldObj != nil && *obj == *oldObj) {
+					return nil
+				}
+			}
+			// call the type's validation function
+			errs = append(errs, Validate_StructWithRequired(ctx, op, fldPath, obj, oldObj)...)
+			return
+		}
+		oldVal := safe.Field(oldObj,
+			func(oldObj *StructWithNestedRequired) *StructWithRequired {
+				return &oldObj.Nested
+			})
+		errs = append(errs, fn(fldPath.Child("nested"), &obj.Nested, oldVal, oldObj != nil)...)
+	}
+
+	return errs
+}
+
+// Validate_StructWithRequired validates an instance of StructWithRequired according
+// to declarative validation rules in the API schema.
+func Validate_StructWithRequired(
+	ctx context.Context, op operation.Operation, fldPath *field.Path,
+	obj, oldObj *StructWithRequired) (errs field.ErrorList) {
+
+	{ // field StructWithRequired.Req
+		fn := func(
+			fldPath *field.Path,
+			obj, oldObj *string,
+			oldValueCorrelated bool) (errs field.ErrorList) {
+			// don't revalidate unchanged data
+			if oldValueCorrelated && op.Type == operation.Update {
+				if obj == oldObj || (obj != nil && oldObj != nil && *obj == *oldObj) {
+					return nil
+				}
+			}
+			// call field-attached validations
+			earlyReturn := false
+			if e := validate.RequiredValue(ctx, op, fldPath, obj, oldObj).MarkShortCircuit(); len(e) != 0 {
+				errs = append(errs, e...)
+				earlyReturn = true
+			}
+			if earlyReturn {
+				return // do not proceed
+			}
+			return
+		}
+		oldVal := safe.Field(oldObj,
+			func(oldObj *StructWithRequired) *string {
+				return &oldObj.Req
+			})
+		errs = append(errs, fn(fldPath.Child("req"), &obj.Req, oldVal, oldObj != nil)...)
+	}
+
+	return errs
+}
+
+var unionMembershipFor_k8s_io_code_generator_cmd_validation_gen_output_tests_tags_required_StructWithUnion_ = validate.NewUnionMembership(validate.NewUnionMember("member1"))
+
+// Validate_StructWithUnion validates an instance of StructWithUnion according
+// to declarative validation rules in the API schema.
+func Validate_StructWithUnion(
+	ctx context.Context, op operation.Operation, fldPath *field.Path,
+	obj, oldObj *StructWithUnion) (errs field.ErrorList) {
+
+	if e := validate.Union(ctx, op, fldPath, obj, oldObj, unionMembershipFor_k8s_io_code_generator_cmd_validation_gen_output_tests_tags_required_StructWithUnion_,
+		func(obj *StructWithUnion) bool {
+			if obj == nil {
+				return false
+			}
+			var z string
+			return obj.Member1 != z
+		}); len(e) != 0 {
+		errs = append(errs, e...)
+	}
+
+	// field StructWithUnion.Member1 has no validation
 	return errs
 }

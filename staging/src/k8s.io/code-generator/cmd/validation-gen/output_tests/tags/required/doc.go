@@ -97,6 +97,29 @@ type Struct struct {
 	// +k8s:required
 	// +k8s:validateFalse="field Struct.MapTypedefField"
 	MapTypedefField MapType `json:"mapTypedefField"`
+
+	// +k8s:required
+	StructWithReqField StructWithRequired `json:"structWithReqField"`
+
+	// +k8s:required
+	StructWithUnionField StructWithUnion `json:"structWithUnionField"`
+
+	// +k8s:required
+	StructWithNestedReqField StructWithNestedRequired `json:"structWithNestedReqField"`
+}
+
+type StructWithRequired struct {
+	// +k8s:required
+	Req string `json:"req"`
+}
+
+type StructWithUnion struct {
+	// +k8s:unionMember
+	Member1 string `json:"member1"`
+}
+
+type StructWithNestedRequired struct {
+	Nested StructWithRequired `json:"nested"`
 }
 
 // +k8s:validateFalse="type StringType"

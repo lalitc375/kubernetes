@@ -46,6 +46,9 @@ func Test(t *testing.T) {
 		field.Required(field.NewPath("byteArrayField"), ""),
 		field.Required(field.NewPath("mapField"), ""),
 		field.Required(field.NewPath("mapTypedefField"), ""),
+		field.Required(field.NewPath("structWithReqField", "req"), ""),
+		field.Required(field.NewPath("structWithNestedReqField", "nested", "req"), ""),
+		field.Invalid(field.NewPath("structWithUnionField"), "", "must specify one of: `member1`"),
 	})
 
 	st.Value(&Struct{
@@ -85,6 +88,9 @@ func Test(t *testing.T) {
 		field.Required(field.NewPath("byteArrayField"), ""),
 		field.Required(field.NewPath("mapField"), ""),
 		field.Required(field.NewPath("mapTypedefField"), ""),
+		field.Required(field.NewPath("structWithReqField", "req"), ""),
+		field.Required(field.NewPath("structWithNestedReqField", "nested", "req"), ""),
+		field.Invalid(field.NewPath("structWithUnionField"), "", "must specify one of: `member1`"),
 	})
 
 	st.Value(&Struct{

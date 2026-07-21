@@ -64,6 +64,14 @@ func testDeclarativeValidate(t *testing.T, apiVersion string) {
 		enableCompositePodGroup         bool
 		expectedErrs                    field.ErrorList
 	}{
+		"empty spec": {
+			input: mkValidPodGroup(func(p *scheduling.PodGroup) { p.Spec = scheduling.PodGroupSpec{} }),
+			expectedErrs: field.ErrorList{
+				field.Invalid(field.NewPath("spec", "schedulingPolicy"), "", "must specify one of: `basic`, `gang`").WithOrigin("union"),
+				field.Required(field.NewPath("spec", "disruptionMode"), ""),
+			},
+		},
+
 		"valid": {
 			input: mkValidPodGroup(),
 		},

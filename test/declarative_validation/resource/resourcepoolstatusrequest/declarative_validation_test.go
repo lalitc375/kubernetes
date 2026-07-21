@@ -46,6 +46,15 @@ func TestDeclarativeValidate(t *testing.T) {
 		input        resource.ResourcePoolStatusRequest
 		expectedErrs field.ErrorList
 	}{
+
+		"empty spec": {
+			input: mkValidRPSR(func(r *resource.ResourcePoolStatusRequest) { r.Spec = resource.ResourcePoolStatusRequestSpec{} }),
+			expectedErrs: field.ErrorList{
+				field.Required(field.NewPath("spec", "driver"), ""),
+				field.Required(field.NewPath("spec", "limit"), ""),
+			},
+		},
+
 		"valid": {
 			input: mkValidRPSR(),
 		},

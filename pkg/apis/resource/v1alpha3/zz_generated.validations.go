@@ -648,6 +648,7 @@ func Validate_ResourcePoolStatusRequest(
 			fldPath *field.Path,
 			obj, oldObj *resourcev1alpha3.ResourcePoolStatusRequestSpec,
 			oldValueCorrelated bool) (errs field.ErrorList) {
+			// non-pointer structs with required or union fields are implicitly required
 			// don't revalidate unchanged data
 			if oldValueCorrelated && op.Type == operation.Update {
 				if equality.Semantic.DeepEqual(obj, oldObj) {

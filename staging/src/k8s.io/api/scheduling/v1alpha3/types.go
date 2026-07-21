@@ -38,6 +38,7 @@ type Workload struct {
 	// spec defines the desired behavior of a Workload.
 	//
 	// +required
+	// +k8s:required
 	Spec WorkloadSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 }
 
@@ -156,6 +157,7 @@ type PodGroupTemplate struct {
 	// schedulingPolicy defines the scheduling policy for this PodGroupTemplate.
 	//
 	// +required
+	// +k8s:required
 	SchedulingPolicy PodGroupSchedulingPolicy `json:"schedulingPolicy" protobuf:"bytes,2,opt,name=schedulingPolicy"`
 
 	// schedulingConstraints defines optional scheduling constraints (e.g. topology) for this PodGroupTemplate.
@@ -489,6 +491,7 @@ type PodGroup struct {
 	// spec defines the desired state of the PodGroup.
 	//
 	// +required
+	// +k8s:required
 	Spec PodGroupSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 
 	// status represents the current observed state of the PodGroup.
@@ -541,6 +544,7 @@ type PodGroupSpec struct {
 	// Controllers are expected to fill this field by copying it from a PodGroupTemplate.
 	//
 	// +required
+	// +k8s:required
 	SchedulingPolicy PodGroupSchedulingPolicy `json:"schedulingPolicy" protobuf:"bytes,3,opt,name=schedulingPolicy"`
 
 	// schedulingConstraints defines optional scheduling constraints (e.g. topology) for this PodGroup.

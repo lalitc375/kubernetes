@@ -1039,6 +1039,7 @@ func Validate_PodGroup(
 			fldPath *field.Path,
 			obj, oldObj *schedulingv1alpha3.PodGroupSpec,
 			oldValueCorrelated bool) (errs field.ErrorList) {
+			// non-pointer structs with required or union fields are implicitly required
 			// don't revalidate unchanged data
 			if oldValueCorrelated && op.Type == operation.Update {
 				if equality.Semantic.DeepEqual(obj, oldObj) {
@@ -1485,6 +1486,7 @@ func Validate_PodGroupSpec(
 			fldPath *field.Path,
 			obj, oldObj *schedulingv1alpha3.PodGroupSchedulingPolicy,
 			oldValueCorrelated bool) (errs field.ErrorList) {
+			// non-pointer structs with required or union fields are implicitly required
 			// don't revalidate unchanged data
 			if oldValueCorrelated && op.Type == operation.Update {
 				if equality.Semantic.DeepEqual(obj, oldObj) {
@@ -1879,6 +1881,7 @@ func Validate_PodGroupTemplate(
 			fldPath *field.Path,
 			obj, oldObj *schedulingv1alpha3.PodGroupSchedulingPolicy,
 			oldValueCorrelated bool) (errs field.ErrorList) {
+			// non-pointer structs with required or union fields are implicitly required
 			// don't revalidate unchanged data
 			if oldValueCorrelated && op.Type == operation.Update {
 				if equality.Semantic.DeepEqual(obj, oldObj) {
@@ -2330,6 +2333,7 @@ func Validate_Workload(
 			fldPath *field.Path,
 			obj, oldObj *schedulingv1alpha3.WorkloadSpec,
 			oldValueCorrelated bool) (errs field.ErrorList) {
+			// non-pointer structs with required or union fields are implicitly required
 			// don't revalidate unchanged data
 			if oldValueCorrelated && op.Type == operation.Update {
 				if equality.Semantic.DeepEqual(obj, oldObj) {

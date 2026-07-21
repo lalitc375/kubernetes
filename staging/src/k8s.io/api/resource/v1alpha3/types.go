@@ -378,6 +378,7 @@ type ResourcePoolStatusRequest struct {
 	//
 	// +required
 	// +k8s:immutable
+	// +k8s:required
 	Spec ResourcePoolStatusRequestSpec `json:"spec" protobuf:"bytes,2,name=spec"`
 
 	// Status is populated by the controller with the calculated pool status.

@@ -27,6 +27,7 @@ const (
 	kindString
 	kindObject
 	kindArray
+	kindRef // a = index of the referenced node; used by the mutation overlay
 )
 
 // node is one tape entry. next is the index one past this node's subtree,
@@ -40,10 +41,12 @@ type node struct {
 }
 
 // Flat is a Kubernetes object stored as a flat tape: two heap allocations
-// regardless of how deeply nested the object is.
+// regardless of how deeply nested the object is (plus a third, also
+// pointer-free, once the object has pending mutations — see overlay.go).
 type Flat struct {
 	nodes []node
 	data  []byte
+	edits []edit
 }
 
 // FromPod converts a typed Pod into the flat representation.
@@ -96,7 +99,9 @@ func (f *Flat) AppendJSON(out []byte) []byte {
 
 // Size is the retained memory of the representation in bytes.
 func (f *Flat) Size() int {
-	return int(unsafe.Sizeof(node{}))*len(f.nodes) + len(f.data)
+	return int(unsafe.Sizeof(node{}))*len(f.nodes) +
+		int(unsafe.Sizeof(edit{}))*len(f.edits) +
+		len(f.data)
 }
 
 // GetString returns the string at path. Path elements index object keys, or
@@ -165,18 +170,25 @@ func (f *Flat) lookup(path []string) (uint32, bool) {
 	if len(f.nodes) == 0 {
 		return 0, false
 	}
-	idx := uint32(0)
+	idx := f.deref(0)
 	for _, elem := range path {
 		n := f.nodes[idx]
 		switch n.kind {
 		case kindObject:
+			if e, ok := f.editFor(idx, elem); ok {
+				if e.del {
+					return 0, false
+				}
+				idx = f.deref(e.val)
+				continue
+			}
 			j := idx + 1
 			found := false
 			for m := uint64(0); m < n.a; m++ {
 				key := f.nodes[j]
 				valIdx := j + 1
 				if string(f.data[key.a:key.a+key.b]) == elem {
-					idx = valIdx
+					idx = f.deref(valIdx)
 					found = true
 					break
 				}
@@ -194,7 +206,7 @@ func (f *Flat) lookup(path []string) (uint32, bool) {
 			for k := 0; k < i; k++ {
 				j = f.nodes[j].next
 			}
-			idx = j
+			idx = f.deref(j)
 		default:
 			return 0, false
 		}
@@ -219,15 +231,49 @@ func (f *Flat) appendValue(out []byte, i uint32) ([]byte, uint32) {
 		return appendJSONString(out, f.data[n.a:n.a+n.b]), i + 1
 	case kindObject:
 		out = append(out, '{')
+		emitted := 0
 		j := i + 1
 		for m := uint64(0); m < n.a; m++ {
-			if m > 0 {
+			key := f.nodes[j]
+			valIdx := j + 1
+			kb := f.data[key.a : key.a+key.b]
+			if e, ok := f.editForBytes(i, kb); ok {
+				if !e.del {
+					if emitted > 0 {
+						out = append(out, ',')
+					}
+					out = appendJSONString(out, kb)
+					out = append(out, ':')
+					out = f.appendValueAt(out, e.val)
+					emitted++
+				}
+			} else {
+				if emitted > 0 {
+					out = append(out, ',')
+				}
+				out = appendJSONString(out, kb)
+				out = append(out, ':')
+				out, _ = f.appendValue(out, valIdx)
+				emitted++
+			}
+			j = f.nodes[valIdx].next
+		}
+		// Keys added by the overlay that don't exist in the original object.
+		for _, e := range f.edits {
+			if e.target != i || e.del {
+				continue
+			}
+			kb := f.data[e.keyOff : e.keyOff+e.keyLen]
+			if f.objectHasKey(i, kb) {
+				continue
+			}
+			if emitted > 0 {
 				out = append(out, ',')
 			}
-			key := f.nodes[j]
-			out = appendJSONString(out, f.data[key.a:key.a+key.b])
+			out = appendJSONString(out, kb)
 			out = append(out, ':')
-			out, j = f.appendValue(out, j+1)
+			out = f.appendValueAt(out, e.val)
+			emitted++
 		}
 		return append(out, '}'), j
 	case kindArray:
@@ -240,8 +286,15 @@ func (f *Flat) appendValue(out []byte, i uint32) ([]byte, uint32) {
 			out, j = f.appendValue(out, j)
 		}
 		return append(out, ']'), j
+	case kindRef:
+		return f.appendValueAt(out, uint32(n.a)), i + 1
 	}
 	return out, i + 1
+}
+
+func (f *Flat) appendValueAt(out []byte, idx uint32) []byte {
+	out, _ = f.appendValue(out, idx)
+	return out
 }
 
 const hexDigits = "0123456789abcdef"
@@ -291,11 +344,15 @@ func (p *parser) skipWS() {
 	}
 }
 
-func (p *parser) push(n node) uint32 {
-	idx := uint32(len(p.f.nodes))
+func (f *Flat) pushNode(n node) uint32 {
+	idx := uint32(len(f.nodes))
 	n.next = idx + 1
-	p.f.nodes = append(p.f.nodes, n)
+	f.nodes = append(f.nodes, n)
 	return idx
+}
+
+func (p *parser) push(n node) uint32 {
+	return p.f.pushNode(n)
 }
 
 func (p *parser) parseValue() error {
